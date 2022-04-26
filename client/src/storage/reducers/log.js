@@ -4,7 +4,7 @@ import { LOG_ADD } from '../types';
 const initial = [];
 
 const actions = {
-  [LOG_ADD]: (state, payload) => [ payload, ...state ],
+  [LOG_ADD]: (state, payload) => [ ...state, payload ],
 };
 
 export default makeReducer({ initial, actions });
