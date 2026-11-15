@@ -4,6 +4,7 @@ import ErrorMessageModal from '../modals/ErrorMessageModal';
 import { createSession } from '../../api/http/session';
 import { loadSettings, saveSettings } from '../../config/server';
 import { applyStylesIf } from '../../tools';
+import { isOnline } from '../../offline';
 import styles from '../../styles/SessionOptions.module.scss';
 
 const initialScore = 26;
@@ -36,7 +37,17 @@ export default function SessionCreator() {
   const [ mode, setMode ] = useState('online');
   const [ pending, setPending ] = useState(false);
 
-  useEffect(() => setMode(loadSettings().mode), []);
+  // without a connection only the game with bots works: switch to it, but keep the saved choice
+  useEffect(() => {
+    const sync = () => setMode(isOnline() ? loadSettings().mode : 'offline');
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
 
   const offline = mode === 'offline';
   const botsCount = offline ? players - 1 : Math.min(bots, players - 1);

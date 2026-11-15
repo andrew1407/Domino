@@ -66,13 +66,6 @@ export const drawBoard = ({ ctx, view, layout, ghostState, onImageLoad }) => {
     roundRect(ctx, g.x - g.w / 2 + 2, g.y - g.h / 2 + 2, g.w - 4, g.h - 4, 8);
     ctx.fill();
     ctx.stroke();
-    if (allowed) {
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('+', g.x, g.y);
-    }
     ctx.restore();
   }
 };

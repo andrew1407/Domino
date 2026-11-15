@@ -1,6 +1,6 @@
 {
   "name": "client",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "domino browser client (online sessions & offline games with bots)",
   "main": "index.js",
   "scripts": {

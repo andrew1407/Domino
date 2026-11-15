@@ -60,6 +60,9 @@
     height: 92px;
     max-height: calc(100% - 4px);
     width: auto;
+    // reserve the tile's box before the svg loads: otherwise a freshly drawn
+    // tile is 0px wide and its green highlight shows up as a bare line
+    aspect-ratio: 64 / 122;
     flex-shrink: 0;
     border-radius: 6px;
   }

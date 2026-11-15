@@ -34,10 +34,9 @@
   color: $green-dark-theme;
 }
 
-@media (max-width: 520px) {
+// desktop only: phones and tablets give the room to the game
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
   .footer {
-    padding: 6px 12px;
-    font-size: 85%;
-    min-height: 34px;
+    display: none;
   }
 }

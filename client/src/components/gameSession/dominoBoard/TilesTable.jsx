@@ -62,6 +62,7 @@ export default function TilesTable() {
   const [ size, setSize ] = useState({ width: 0, height: 0 });
   const [ camera, setCamera ] = useState({ zoom: 1, pan: { x: 0, y: 0 } });
   const [ hovered, setHovered ] = useState(null);
+  const [ grabbing, setGrabbing ] = useState(false);
   const [ redraw, setRedraw ] = useState(0);
   const requestRedraw = useCallback(() => setRedraw(n => n + 1), []);
   const deck = useSelector(getCommonDeck);
@@ -201,6 +202,7 @@ export default function TilesTable() {
       } else if (pointers.size === 1) {
         const p = local(e);
         drag = { last: p, start: p };
+        setGrabbing(true);
       }
     };
 
@@ -225,6 +227,7 @@ export default function TilesTable() {
 
     const onUp = e => {
       pointers.delete(e.pointerId);
+      if (!pointers.size) setGrabbing(false);
       if (pinch) {
         if (pointers.size < 2) pinch = null;
         // continue dragging with the remaining finger
@@ -298,7 +301,8 @@ export default function TilesTable() {
   const zoomCenter = useCallback(factor => zoomAt(factor, size.width / 2, size.height / 2), [zoomAt, size]);
   const resetView = useCallback(() => setCamera({ zoom: 1, pan: { x: 0, y: 0 } }), []);
   const moved = camera.pan.x || camera.pan.y || camera.zoom !== 1;
-  const cursor = hovered && ghostState[hovered]?.allowed ? 'pointer' : 'grab';
+  const cursor = grabbing ? 'grabbing' :
+    hovered && ghostState[hovered]?.allowed ? 'pointer' : 'grab';
 
   return (
     <div ref={containerRef} className={styles.tilesTable}>

@@ -33,3 +33,32 @@ describe('SessionCreator defaults', () => {
     expect(screen.getByText('You against 1 bot, right in the browser.')).toBeInTheDocument();
   });
 });
+
+describe('SessionCreator without a connection', () => {
+  const setOnline = value => {
+    Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => value });
+  };
+  const picked = () => document.querySelector('[class*=modeBtnPicked]').textContent;
+
+  afterEach(() => setOnline(true));
+
+  it('switches to the offline game and back, keeping the saved mode', async () => {
+    await renderCreator();
+    await pickMode('online (server)');
+
+    setOnline(false);
+    await act(async () => window.dispatchEvent(new Event('offline')));
+    expect(picked()).toBe('offline (bots)');
+
+    setOnline(true);
+    await act(async () => window.dispatchEvent(new Event('online')));
+    expect(picked()).toBe('online (server)');
+    expect(JSON.parse(window.localStorage.getItem('domino:server-settings')).mode).toBe('online');
+  });
+
+  it('opens on the offline game without a connection', async () => {
+    setOnline(false);
+    await renderCreator();
+    expect(picked()).toBe('offline (bots)');
+  });
+});

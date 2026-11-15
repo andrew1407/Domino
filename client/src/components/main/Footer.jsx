@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className={styles.footer}>
       <p className={styles.version}>
         <small>
-          <b>version: 0.3.0</b>
+          <b>version: {process.env.NEXT_PUBLIC_APP_VERSION}</b>
         </small>
       </p>
 

@@ -1,0 +1,13 @@
+{
+  "name": "Domino",
+  "short_name": "Domino",
+  "description": "Classic domino for 2-4 players: online sessions and games with bots",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fffdd0",
+  "theme_color": "#cca85c",
+  "icons": [
+    { "src": "static/tiles/6-6.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
