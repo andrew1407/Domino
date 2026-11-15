@@ -1,22 +1,52 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useCallback, useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import ErrorMessageModal from '../modals/ErrorMessageModal';
-import { createOptionEntries, playersSelector, scoreContainer, optionsSubmitBtn } from '../../styles/SessionOptions.module.scss';
 import { createSession } from '../../api/http/session';
-import { setSessionId } from '../../storage/actions/sessionId';
+import { loadSettings, saveSettings } from '../../config/server';
+import { applyStylesIf } from '../../tools';
+import styles from '../../styles/SessionOptions.module.scss';
 
 const initialScore = 26;
 const availablePlayers = [2, 3, 4];
 
+const modes = {
+  online: 'online (server)',
+  peer: 'direct (no server)',
+  offline: 'offline (bots)',
+};
+
+const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+
+const summary = (mode, humans, bots) => {
+  if (mode === 'offline') return `You against ${plural(bots, 'bot')}, right in the browser.`;
+  const players = plural(humans, 'human player') + (bots ? ` + ${plural(bots, 'bot')}` : '');
+  if (mode === 'peer')
+    return `${players}. This device hosts the game and other players connect to it directly ` +
+      '(WebRTC): no game server, works on the same Wi-Fi or phone hotspot.';
+  return players + (humans > 1 ? ': share the session ID with friends.' : '.');
+};
+
 export default function SessionCreator() {
-  const dispatch = useDispatch();
   const router = useRouter();
-  const sessionInupt = useRef();
   const [ errorMessage, setErrorMessage ] = useState('');
   const [ score, setScore ] = useState(initialScore);
   const [ players, setPlayers ] = useState(availablePlayers[0]);
-  
+  // online and direct games default to humans only; offline fills the free seats with bots
+  const [ bots, setBots ] = useState(0);
+  const [ mode, setMode ] = useState('online');
+  const [ pending, setPending ] = useState(false);
+
+  useEffect(() => setMode(loadSettings().mode), []);
+
+  const offline = mode === 'offline';
+  const botsCount = offline ? players - 1 : Math.min(bots, players - 1);
+  const humans = players - botsCount;
+
+  const pickMode = useCallback(m => {
+    setMode(m);
+    saveSettings({ mode: m });
+  }, []);
+
   const closeErrorModal = useCallback(() => setErrorMessage(''), []);
 
   const setScoreParsed = useCallback(e => {
@@ -24,46 +54,61 @@ export default function SessionCreator() {
     setScore(!isNaN(parsed) ? parsed : 0);
   }, []);
 
-  const setPlayersParsed = useCallback(e => {
-    const parsed = parseInt(e.currentTarget.value, 10);
-    setPlayers(!isNaN(parsed) ? parsed : availablePlayers[0]);
-  }, []);
-
   const createNewSession = useCallback(async e => {
     e.preventDefault();
+    if (pending) return;
+    setPending(true);
     try {
-      const createdSession = await createSession(players, score);
-      dispatch(setSessionId(createdSession));
-      router.push('/game-session/[id]', '/game-session/' + createdSession);
+      const createdSession = await createSession(players, score, botsCount, mode);
+      router.push({ pathname: '/game-session/play', query: { id: createdSession } });
     } catch (e) {
       setErrorMessage(e.message);
+      setPending(false);
     }
-  }, [score, players]);
-
-  useEffect(() => sessionInupt.current?.focus(), []);
+  }, [score, players, botsCount, mode, pending]);
 
   return (
-    <form className={createOptionEntries} onSubmit={createNewSession}>
-      <div className={playersSelector}>
-        <label>Players:</label>
-        <select value={players} onChange={setPlayersParsed}>
-          {availablePlayers.map(p => (
-            <option key={p} value={p} onClick={() => setPlayers(p)}>{p}</option>
-          ))}
+    <form className={styles.createOptionEntries} onSubmit={createNewSession}>
+      <div className={styles.modeSelector}>
+        {Object.entries(modes).map(([m, label]) => (
+          <button
+            key={m}
+            type="button"
+            className={applyStylesIf(m === mode, [styles.modeBtn, styles.modeBtnPicked], [styles.modeBtn])}
+            onClick={() => pickMode(m)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.fieldRow}>
+        <label htmlFor="players">Players:</label>
+        <select id="players" value={players} onChange={e => setPlayers(parseInt(e.target.value, 10))}>
+          {availablePlayers.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
       </div>
 
-      <div className={scoreContainer}>
-        <label>Finish score:</label>
-        <input
-          ref={sessionInupt}
-          type="number"
-          value={score}
-          onChange={setScoreParsed}
-        />
+      <div className={styles.fieldRow}>
+        <label htmlFor="bots">Bots:</label>
+        <select
+          id="bots"
+          value={botsCount}
+          disabled={offline}
+          onChange={e => setBots(parseInt(e.target.value, 10))}
+        >
+          {Array.from({ length: players }, (_, i) => i).map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
       </div>
 
-      <input className={optionsSubmitBtn} type="submit" value="create" />
+      <div className={styles.fieldRow}>
+        <label htmlFor="score">Finish score:</label>
+        <input id="score" type="number" min="1" value={score} onChange={setScoreParsed} />
+      </div>
+
+      <p className={styles.summary}>{summary(mode, humans, botsCount)}</p>
+
+      <input className={styles.optionsSubmitBtn} type="submit" value={pending ? 'creating…' : 'create'} disabled={pending} />
 
       <ErrorMessageModal
         visible={!!errorMessage}
@@ -72,4 +117,4 @@ export default function SessionCreator() {
       />
     </form>
   );
-};
+}

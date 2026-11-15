@@ -1,3 +1,17 @@
+let envLoaded: boolean = false;
+
+export function loadEnv(): void {
+  if (envLoaded) return;
+  envLoaded = true;
+  try {
+    process.loadEnvFile();
+  } catch {
+    // .env file is optional
+  }
+}
+
+loadEnv();
+
 export default function config(): object {
   return {
     port: parseInt(process.env.PORT, 10) || 8080,

@@ -1,7 +1,7 @@
 import { setTimeout } from 'timers';
-import ErrorStatus from './ErrorStatus';
-import gatewayShutdown from './gatewayShutdown';
-import GameSessionRes from './responseTypes';
+import ErrorStatus from './ErrorStatus.js';
+import gatewayShutdown from './gatewayShutdown.js';
+import GameSessionRes from './responseTypes.js';
 
 export default class GameSessionError extends Error {
   public static notExists(): GameSessionError {

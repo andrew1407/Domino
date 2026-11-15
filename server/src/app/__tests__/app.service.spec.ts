@@ -1,5 +1,5 @@
-import AppService from '../app.service';
-import commands from '../commands.json';
+import AppService from '../app.service.js';
+import commands from '../commands.json' with { type: 'json' };
 
 describe('getCommands', (): void => {
   const service: AppService = new AppService();

@@ -1,40 +1,178 @@
-@import "../tools.scss";
+@use "../tools" as *;
 
 .deckContainer {
+  grid-area: deck;
+  @include panel($wood-theme);
   @include flex-display(row, none);
-  @include block-decoration(rgb(197, 134, 75), top, $brown-theme, 4px);
-  grid-column: 1 / 5;
-  grid-row: 14 / -1;
+  align-items: stretch;
+  min-height: 112px;
+  overflow: hidden;
 }
 
-.stockBtn {
-  @include block-decoration(rgb(221, 153, 90), all, $brown-theme, 2px);
-  font-size: 130%;
-  outline: none;
-  width: max-content;
+.controls {
+  @include flex-display(column, center);
+  flex: none;
+  gap: 8px;
+  min-width: 300px;
+  padding: 10px 14px;
+  background-color: rgba(255, 253, 208, 0.18);
+  border-right: 2px solid rgba(155, 72, 5, 0.45);
+}
+
+.status {
+  margin: 0;
+  font-size: 100%;
+  font-style: italic;
+}
+
+.statusActive {
+  font-style: normal;
+  font-weight: 800;
+  color: $brown-dark-theme;
+}
+
+.buttons {
+  @include flex-display(row, none);
+  gap: 6px;
+}
+
+.actionBtn, .stockBtn {
+  @include button;
+  font-size: 92%;
+  padding: 5px 10px;
+  white-space: nowrap;
 }
 
 .tilesContainer {
   @include flex-display(row, none);
+  flex: 1;
+  min-width: 0;
   @include scrollbar(horizontal, 6px, $brown-theme, 10px);
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  padding: 0 2%;
-  overflow-x: scroll;
+  padding: 8px 14px;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 12px;
+
+  img {
+    height: 92px;
+    max-height: calc(100% - 4px);
+    width: auto;
+    flex-shrink: 0;
+    border-radius: 6px;
+  }
 }
 
 .tileContainer {
-  margin: 0.5% 1%;
-  padding: 0.3%;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 10px rgba(40, 20, 0, 0.45);
+  }
 }
 
-.tileContainer:hover {
-  padding: 0;
-  margin: 0.5% 1%;
-  box-shadow: 5px 5px 8px black;
+.pickedTileContainer, .pickedTileContainer.playableTile {
+  cursor: pointer;
+  transform: translateY(-6px);
+  outline: 4px solid $green-theme;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px $cream-theme, 0 10px 16px rgba(40, 20, 0, 0.5);
+  transition: transform 0.12s;
 }
 
-.pickedTileContainer {
-  padding: 0;
-  margin: 0.5% 1%;
-  box-shadow: 0px 0px 15px $cream-theme;
+.playableTile {
+  box-shadow: 0 0 0 3px $green-theme;
+}
+
+.playableTile.tileContainer:hover {
+  box-shadow: 0 0 0 3px $green-theme, 0 6px 10px rgba(40, 20, 0, 0.45);
+}
+
+@media (max-width: 1280px) {
+  .controls {
+    min-width: 260px;
+  }
+
+  .tilesContainer img {
+    height: 80px;
+  }
+}
+
+@media (max-width: 900px) {
+  .deckContainer {
+    flex-direction: column;
+  }
+
+  .controls {
+    min-width: 0;
+    border-right: none;
+    border-bottom: 2px solid rgba(155, 72, 5, 0.45);
+  }
+
+  .buttons {
+    width: 100%;
+  }
+
+  .actionBtn, .stockBtn {
+    flex: 1;
+    min-height: 40px;
+    font-size: 100%;
+  }
+
+  .tilesContainer img {
+    height: 78px;
+  }
+}
+
+@media (max-width: 520px) {
+  .controls {
+    padding: 8px;
+  }
+
+  .actionBtn, .stockBtn {
+    padding: 4px 6px;
+    font-size: 92%;
+  }
+
+  .tilesContainer {
+    gap: 8px;
+    padding: 10px 8px 8px;
+  }
+
+  .tilesContainer img {
+    height: 70px;
+  }
+}
+
+@media (max-height: 520px) and (min-width: 600px) {
+  .deckContainer {
+    flex-direction: row;
+    min-height: 0;
+  }
+
+  .controls {
+    min-width: 0;
+    border-bottom: none;
+    border-right: 2px solid rgba(155, 72, 5, 0.45);
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .status {
+    font-size: 85%;
+  }
+
+  .actionBtn, .stockBtn {
+    min-height: 32px;
+    font-size: 82%;
+    padding: 2px 6px;
+  }
+
+  .tilesContainer img {
+    height: 56px;
+  }
 }

@@ -1,4 +1,5 @@
-import { logHeader } from '../../../styles/gameSession/HistoryLog.module.scss';
+import styles from '../../../styles/gameSession/HistoryLog.module.scss';
+const { logHeader } = styles;
 
 export default function LogTitle() {
   return (

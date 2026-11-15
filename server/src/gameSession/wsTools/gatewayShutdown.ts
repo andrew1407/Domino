@@ -1,4 +1,4 @@
-import GameSessionError from './GameSessionError';
+import GameSessionError from './GameSessionError.js';
 
 export default function gatewayShutdown(err: Error): void | never {
   const gameSessionInstance: boolean = err instanceof GameSessionError;

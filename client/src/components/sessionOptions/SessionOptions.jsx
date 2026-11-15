@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import SessionCreator from './SessionCreator';
 import SessionSearch from './SessionSearch';
-import { optionsContainer, optionsList, optionBlock, pickedOptionBlock } from '../../styles/SessionOptions.module.scss';
+import ServerSettings from './ServerSettings';
 import { applyStylesIf } from '../../tools';
+import styles from '../../styles/SessionOptions.module.scss';
 
 const options = {
   'create session': SessionCreator,
   'join session': SessionSearch,
+  'server': ServerSettings,
 };
 
 export default function SessionOptions() {
-  const [pickedOption, setPickedOption] = useState('create session');
+  const [ pickedOption, setPickedOption ] = useState('create session');
   const VisibleOption = options[pickedOption];
 
   return (
-    <div className={optionsContainer}>
-      <div className={optionsList}>
+    <div className={styles.optionsContainer}>
+      <div className={styles.optionsList}>
         {Object.keys(options).map(op => (
           <div
             key={op}
-            className={applyStylesIf(op === pickedOption, [optionBlock, pickedOptionBlock], [optionBlock])}
+            role="tab"
+            className={applyStylesIf(op === pickedOption, [styles.optionBlock, styles.pickedOptionBlock], [styles.optionBlock])}
             onClick={() => setPickedOption(op)}
           >
             <p>{op}</p>
@@ -27,7 +30,9 @@ export default function SessionOptions() {
         ))}
       </div>
 
-      <VisibleOption />
+      <div className={styles.optionContent}>
+        <VisibleOption />
+      </div>
     </div>
   );
-};
+}

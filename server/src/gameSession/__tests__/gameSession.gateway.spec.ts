@@ -1,28 +1,30 @@
+import type { Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebSocket } from 'ws';
 import { setTimeout } from 'timers/promises';
-import DominoTile from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import GameSessionGateway from '../gameSession.gateway';
-import GameSessionService from '../gameSession.service';
-import { MoveOption } from '../playMode/PlayMode';
-import GameSessionError from '../wsTools/GameSessionError';
-import GameSessionRes, { MovePermissionRes, PlayerRes } from '../wsTools/responseTypes';
+import DominoTile from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import GameSessionGateway from '../gameSession.gateway.js';
+import GameSessionService from '../gameSession.service.js';
+import { MoveOption } from '../playMode/PlayMode.js';
+import GameSessionError from '../wsTools/GameSessionError.js';
+import GameSessionRes, { MovePermissionRes, PlayerRes } from '../wsTools/responseTypes.js';
 
 
-const gameSessionServiceStub: Record<string, jest.Mock> = {
-  makeNewSession: jest.fn((): string => 'test-session-id'),
-  removeSession: jest.fn(),
-  removePlayer: jest.fn(),
-  shouldWaitForPlayers: jest.fn(async (): Promise<boolean> => true),
-  shouldMove: jest.fn((): boolean => true),
-  joinSession: jest.fn((): object => ({ name: 'Bobo' })),
-  ableToMove: jest.fn((): boolean => false),
-  ableToPlay: jest.fn((): boolean => false),
-  moveAction: jest.fn((): unknown[] => []),
-  outOfTiles: jest.fn((): boolean => false),
-  setNextPlayer: jest.fn(),
-  getFromStock: jest.fn(),
+const gameSessionServiceStub: Record<string, Mock> = {
+  makeNewSession: vi.fn((): string => 'test-session-id'),
+  removeSession: vi.fn(),
+  removePlayer: vi.fn(),
+  shouldWaitForPlayers: vi.fn(async (): Promise<boolean> => true),
+  shouldMove: vi.fn((): boolean => true),
+  joinSession: vi.fn((): object => ({ name: 'Bobo' })),
+  ableToMove: vi.fn((): boolean => false),
+  ableToPlay: vi.fn((): boolean => false),
+  moveAction: vi.fn((): unknown[] => []),
+  outOfTiles: vi.fn((): boolean => false),
+  setNextPlayer: vi.fn(),
+  getFromStock: vi.fn(),
+  pickBotMove: vi.fn(),
 };
 
 describe('game session gateway', (): void => {
@@ -40,7 +42,8 @@ describe('game session gateway', (): void => {
   afterEach((): void => {
     for (const sid of Object.keys(gateway['sessions']))
       delete gateway['sessions'][sid];
-    jest.clearAllMocks();
+    gateway['locked'].clear();
+    vi.clearAllMocks();
   });
 
   describe('makeNewSession', (): void => {    
@@ -50,7 +53,7 @@ describe('game session gateway', (): void => {
       const result: string = await gateway.newSession(players, score);
       expect(result).toEqual('test-session-id');
       expect(gameSessionServiceStub.makeNewSession).toBeCalledTimes(1);
-      expect(gameSessionServiceStub.makeNewSession).toBeCalledWith(players, score);
+      expect(gameSessionServiceStub.makeNewSession).toBeCalledWith(players, score, 0);
     });
 
     it('should create an empty session players array', async (): Promise<void> => {
@@ -59,6 +62,71 @@ describe('game session gateway', (): void => {
       expect(sessions).toHaveProperty(id);
       expect(Object.keys(sessions)).toHaveLength(1);
       expect(sessions[id]).toHaveLength(0);
+    });
+  });
+
+  describe('newSession with bots', (): void => {
+    it('should remove a session whose bots could not be seated', async (): Promise<void> => {
+      gameSessionServiceStub.joinSession
+        .mockImplementationOnce((): object => ({ name: 'Sasik' }))
+        .mockImplementationOnce(async (): Promise<never> => { throw new Error('redis is down'); });
+      await expect(gateway.newSession(4, 50, 3)).rejects.toThrow('redis is down');
+      expect(gateway['sessions']['test-session-id']).toBeUndefined();
+      expect(gameSessionServiceStub.removeSession).toBeCalledWith('test-session-id');
+    });
+
+
+    it('should join bot players right after the session creation', async (): Promise<void> => {
+      gameSessionServiceStub.joinSession
+        .mockImplementationOnce((): object => ({ name: 'Sasik' }))
+        .mockImplementationOnce((): object => ({ name: 'Mavun' }));
+      const id: string = await gateway.newSession(3, 50, 2);
+      expect(gameSessionServiceStub.makeNewSession).toBeCalledWith(3, 50, 2);
+      expect(gameSessionServiceStub.joinSession).toBeCalledTimes(2);
+      expect(gateway['sessions'][id]).toStrictEqual([
+        { name: 'Sasik', socket: null, bot: true },
+        { name: 'Mavun', socket: null, bot: true },
+      ]);
+    });
+
+    it('should remove the session when the last human leaves before start', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      const socket: object = {};
+      sessions[id] = [{ name: 'Sasik', socket: null, bot: true }, { name: 'Bobo', socket }];
+      await gateway.handleDisconnect(socket as WebSocket);
+      expect(gameSessionServiceStub.removePlayer).toBeCalledWith(id, 'Bobo');
+      expect(gameSessionServiceStub.removeSession).toBeCalledWith(id);
+      expect(sessions).not.toHaveProperty(id);
+    });
+
+    it('should not treat bots as connected sockets', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      sessions[id] = [{ name: 'Sasik', socket: null, bot: true }];
+      await gateway.handleDisconnect(null);
+      expect(gameSessionServiceStub.removePlayer).toBeCalledTimes(0);
+      expect(sessions).toHaveProperty(id);
+    });
+
+    it('should make a bot move with a playable tile', async (): Promise<void> => {
+      const id: string = 'test-session-id';
+      gateway['sessions'][id] = [{ name: 'Sasik', socket: null, bot: true }];
+      const tile: DominoTile = DominoTile.of(2, 3);
+      gameSessionServiceStub.pickBotMove.mockImplementationOnce(async (): Promise<unknown> => [tile, 'left']);
+      await gateway['botMove'](id, 'Sasik');
+      expect(gameSessionServiceStub.moveAction).toBeCalledWith(id, 'Sasik', tile, 'left');
+      expect(gameSessionServiceStub.getFromStock).toBeCalledTimes(0);
+    });
+
+    it('should take a tile from the stock if a bot has nothing to play', async (): Promise<void> => {
+      const id: string = 'test-session-id';
+      gateway['sessions'][id] = [{ name: 'Sasik', socket: null, bot: true }];
+      gameSessionServiceStub.pickBotMove.mockImplementationOnce(async (): Promise<unknown> => null);
+      gameSessionServiceStub.getFromStock.mockImplementationOnce(async (): Promise<unknown[]> => []);
+      await gateway['botMove'](id, 'Sasik');
+      expect(gameSessionServiceStub.moveAction).toBeCalledTimes(0);
+      expect(gameSessionServiceStub.getFromStock).toBeCalledWith(id, 'Sasik');
     });
   });
 
@@ -131,9 +199,99 @@ describe('game session gateway', (): void => {
       const sessions: { [key: string]: unknown[] } = gateway['sessions'];
       const id: string = 'test-session-id';
       sessions[id] = [];
-      await gateway.onSessionJoin(null, id);
+      const socket: object = { readyState: WebSocket.OPEN, send: vi.fn() };
+      await gateway.onSessionJoin(socket as WebSocket, id);
       expect(gameSessionServiceStub.joinSession).toBeCalledTimes(1);
-      expect(sessions[id]).toStrictEqual([{ name: 'Bobo', socket: null }]);
+      expect(sessions[id]).toStrictEqual([{ name: 'Bobo', socket }]);
+    });
+
+    it('should free the seat of a client which disconnected while its join was queued', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      sessions[id] = [];
+      const socket: object = { readyState: WebSocket.CLOSED, send: vi.fn() };
+      await gateway.onSessionJoin(socket as WebSocket, id);
+      expect(sessions[id]).toStrictEqual([]);
+      expect(gameSessionServiceStub.removePlayer).toBeCalledWith(id, 'Bobo');
+      expect(gameSessionServiceStub.shouldWaitForPlayers).toBeCalledTimes(0);
+    });
+  });
+
+  describe('concurrent actions', (): void => {
+    it('should apply only the first of two simultaneous moves of a player', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      const socket: object = { send: vi.fn() };
+      sessions[id] = [{ name: 'Bobo', socket }];
+      const results: unknown[] = await Promise.all([
+        gateway.onMoveAction(socket as WebSocket, id, { left: '0', right: '1' }, 'right'),
+        gateway.onMoveAction(socket as WebSocket, id, { left: '2', right: '1' }, 'left'),
+      ]);
+      expect(gameSessionServiceStub.moveAction).toBeCalledTimes(1);
+      expect(results[1]).toStrictEqual(GameSessionError.unavailableMove().info());
+      delete sessions[id];
+      await setTimeout(1100);
+    });
+
+    it('should release the lock when a move is rejected', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      const socket: object = { send: vi.fn() };
+      sessions[id] = [{ name: 'Bobo', socket }];
+      gameSessionServiceStub.moveAction.mockImplementationOnce(async (): Promise<never> => {
+        throw new Error('invalid deck entries');
+      });
+      await gateway.onMoveAction(socket as WebSocket, id, { left: '0', right: '1' }, 'right');
+      expect(gateway['locked'].has(id)).toBe(false);
+    });
+
+    it('should end the session when a stored move cannot be finished', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      const socket: { send: Mock, close: Mock } = { send: vi.fn(), close: vi.fn() };
+      sessions[id] = [{ name: 'Bobo', socket }];
+      gameSessionServiceStub.outOfTiles.mockImplementationOnce(async (): Promise<never> => {
+        throw new Error('redis is down');
+      });
+      const error: (typeof console)['error'] = console.error;
+      console.error = vi.fn();
+      await gateway.onMoveAction(socket as unknown as WebSocket, id, { left: '0', right: '1' }, 'right');
+      await setTimeout(10);
+      console.error = error;
+      expect(sessions[id]).toBeUndefined();
+      expect(gateway['locked'].has(id)).toBe(false);
+      const statuses: string[] = socket.send.mock.calls.map((c: string[]): string => JSON.parse(c[0]).errorStatus);
+      expect(statuses).toContain('INTERNAL_SERVER_ERROR');
+      expect(socket.close).toBeCalledTimes(1);
+    });
+
+    it('should not let a bot move while the session is locked', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      sessions[id] = [{ name: 'Sasik', socket: null, bot: true }];
+      gameSessionServiceStub.pickBotMove.mockImplementationOnce(async (): Promise<unknown> => {
+        // a human action locks the session while the bot is deciding
+        gateway['locked'].add(id);
+        return [DominoTile.of(0, 1), 'right'];
+      });
+      await gateway['botMove'](id, 'Sasik');
+      expect(gameSessionServiceStub.moveAction).toBeCalledTimes(0);
+    });
+
+    it('should end a session whose turn chain has failed', async (): Promise<void> => {
+      const sessions: { [key: string]: unknown[] } = gateway['sessions'];
+      const id: string = 'test-session-id';
+      const socket: { send: Mock, close: Mock } = { send: vi.fn(), close: vi.fn() };
+      sessions[id] = [{ name: 'Bobo', socket }, { name: 'Sasik', socket: null, bot: true }];
+      gateway['runSafe'](id, Promise.reject(new Error('redis is down')));
+      const error: (typeof console)['error'] = console.error;
+      console.error = vi.fn();
+      await setTimeout(10);
+      console.error = error;
+      expect(JSON.parse(socket.send.mock.calls[0][0]).errorStatus).toBe('INTERNAL_SERVER_ERROR');
+      expect(socket.close).toBeCalledTimes(1);
+      expect(sessions[id]).toBeUndefined();
+      expect(gameSessionServiceStub.removeSession).toBeCalledWith(id);
     });
   });
 

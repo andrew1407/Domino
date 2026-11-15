@@ -1,16 +1,17 @@
-version: "3"
 services:
   server_test:
     build:
       context: ./server
       dockerfile: Dockerfile.test
     depends_on:
-      - "redis"
+      redis:
+        condition: service_healthy
 
-      
   redis:
-    container_name: redis
     image: redis:alpine
     command: redis-server --requirepass ${REDIS_PASSWD}
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWD}", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

@@ -1,11 +1,12 @@
+import type { Mock } from 'vitest';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import GameSessionController from '../gameSession.controller';
-import GameSessionGateway from '../gameSession.gateway';
-import GameSessionError from '../wsTools/GameSessionError';
+import GameSessionController from '../gameSession.controller.js';
+import GameSessionGateway from '../gameSession.gateway.js';
+import GameSessionError from '../wsTools/GameSessionError.js';
 
-const gatewayStub: Record<string, jest.Mock> = {
-  newSession: jest.fn((): string => 'session-test-id'),
+const gatewayStub: Record<string, Mock> = {
+  newSession: vi.fn((): string => 'session-test-id'),
 };
 
 describe('game session controller', (): void => {
@@ -22,7 +23,7 @@ describe('game session controller', (): void => {
   });
 
   afterEach((): void => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
 
@@ -31,23 +32,24 @@ describe('game session controller', (): void => {
     'makeSessionUsingBody',
   ])('%s', (method: keyof GameSessionController): void => {
     it('sould resolve session id', async (): Promise<void> => {
-      await expect(controller[method](3, 56)).resolves
+      await expect(controller[method](3, 56, 0)).resolves
         .toEqual('session-test-id');
     });
 
     it('sould call "newSession" method with taken params', async (): Promise<void> => {
       const players: number = 3;
       const score: number = 56;
-      await controller[method](players, score);
+      const bots: number = 2;
+      await controller[method](players, score, bots);
       expect(gatewayStub.newSession).toBeCalledTimes(1);
-      expect(gatewayStub.newSession).toBeCalledWith(players, score);
+      expect(gatewayStub.newSession).toBeCalledWith(players, score, bots);
     });
 
     it('sould reject BadRequestException', async (): Promise<void> => {
       gatewayStub.newSession.mockImplementationOnce((): never => {
         throw GameSessionError.badRequest();
       });
-      await expect(controller[method](2, 26)).rejects
+      await expect(controller[method](2, 26, 0)).rejects
         .toStrictEqual(new BadRequestException('Invalid session data has been sent'));
     });
 
@@ -55,7 +57,7 @@ describe('game session controller', (): void => {
       gatewayStub.newSession.mockImplementationOnce((): never => {
         throw new Error('test error message');
       });
-      await expect(controller[method](2, 26)).rejects
+      await expect(controller[method](2, 26, 0)).rejects
         .toStrictEqual(new InternalServerErrorException('test error message'));
     });
   });

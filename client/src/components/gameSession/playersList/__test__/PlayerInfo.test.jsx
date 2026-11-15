@@ -16,3 +16,13 @@ describe('PlayerInfo', () => {
     expect(playerInfo).toHaveTextContent(testData.score);
   });
 });
+
+describe('PlayerInfo labels', () => {
+  it('marks bots and the current player', () => {
+    const { getByTestId } = render(<PlayerInfo name="Bobo" score={3} tiles={2} bot active />);
+    const playerInfo = getByTestId('player-info');
+    expect(playerInfo).toHaveTextContent('bot');
+    expect(playerInfo).toHaveTextContent('▶');
+    expect(playerInfo).not.toHaveTextContent('(you)');
+  });
+});

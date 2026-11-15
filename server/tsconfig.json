@@ -1,17 +1,23 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "declaration": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2024",
+    "lib": ["es2024"],
+    "types": ["node", "vitest/globals"],
+    "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
-    "target": "es2017",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "rootDir": "./src",
     "incremental": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true
-  }
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["src"]
 }

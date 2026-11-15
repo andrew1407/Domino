@@ -1,0 +1,126 @@
+@use "./tools" as *;
+
+.home {
+  @include flex-display(column, none);
+  gap: 18px;
+  max-width: 920px;
+  margin: 28px auto;
+  padding: 0 16px;
+}
+
+.hero {
+  @include panel($cream-dark-theme);
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 34px 20px 30px;
+  background: radial-gradient(circle at 50% 0%, #e2c37d, $cream-dark-theme 70%);
+
+  h2 {
+    margin: 0 0 10px;
+    font-size: 175%;
+    color: $brown-dark-theme;
+  }
+
+  p {
+    font-size: 118%;
+    line-height: 1.5;
+    margin: 0 auto 22px;
+    max-width: 620px;
+  }
+}
+
+.heroTiles {
+  @include flex-display(row, center);
+  gap: 10px;
+  margin-bottom: 18px;
+
+  img {
+    height: 70px;
+    filter: drop-shadow(2px 3px 3px rgba(60, 30, 0, 0.35));
+  }
+
+  img:nth-child(odd) {
+    transform: rotate(-8deg);
+  }
+
+  img:nth-child(even) {
+    transform: rotate(8deg);
+  }
+}
+
+.playBtn {
+  @include primary-button;
+  display: inline-block;
+  padding: 10px 52px;
+  font-family: "Orbitron", sans-serif;
+  font-size: 150%;
+  border-radius: $radius;
+}
+
+.card {
+  @include panel($cream-mid-theme);
+  padding: 6px 22px 18px;
+
+  h3 {
+    margin: 12px 0 10px;
+    font-size: 120%;
+    color: $brown-theme;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 22px;
+  }
+
+  li {
+    font-size: 108%;
+    line-height: 1.55;
+  }
+}
+
+.secondaryBtn {
+  @include button;
+}
+
+.error {
+  color: $brown-dark-theme;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .home {
+    margin: 14px auto;
+    padding: 0 10px;
+    gap: 12px;
+  }
+
+  .hero {
+    padding: 24px 14px 22px;
+
+    h2 {
+      font-size: 135%;
+    }
+
+    p {
+      font-size: 102%;
+    }
+  }
+
+  .heroTiles img {
+    height: 52px;
+  }
+
+  .playBtn {
+    padding: 10px 40px;
+    font-size: 130%;
+  }
+
+  .card {
+    padding: 4px 14px 14px;
+
+    li {
+      font-size: 98%;
+    }
+  }
+}

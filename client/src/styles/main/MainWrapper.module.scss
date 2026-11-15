@@ -1,11 +1,14 @@
-@import "../tools.scss";
+@use "../tools" as *;
 
 .mainBlock {
   @include flex-display(column, none);
-  min-height: 100%;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .centralBlock {
-  overflow-y: visible;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  @include scrollbar(vertical, 9px, $brown-theme, 10px);
 }
-

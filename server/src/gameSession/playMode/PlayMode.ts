@@ -1,6 +1,6 @@
-import DominoTile, { TilesDeck } from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import MoveState from './MoveState';
+import DominoTile, { TilesDeck } from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import MoveState from './MoveState.js';
 
 export type PlayersDecks = Partial<Record<PlayerName, TilesDeck>>;
 export type MoveOption = 'left' | 'right';
@@ -20,6 +20,11 @@ export default interface PlayMode {
     comparable: DominoTile,
     side: MoveOption
   ): boolean;
+
+  pickMove(
+    deck: TilesDeck,
+    ends: TilesDeck
+  ): [DominoTile, MoveOption] | null;
 
   ableToPlay(
     currentPlayer: PlayerName,

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import DominoTile, { TilesDeck, EndValue } from './entities/DominoTile';
-import { PlayerName } from './entities/Player';
-import MoveState from './playMode/MoveState';
-import PlayMode, { MoveOption, PlayersDecks } from './playMode/PlayMode';
+import DominoTile, { TilesDeck, EndValue } from './entities/DominoTile.js';
+import { PlayerName } from './entities/Player.js';
+import MoveState from './playMode/MoveState.js';
+import PlayMode, { MoveOption, PlayersDecks } from './playMode/PlayMode.js';
 
 @Injectable()
 export default class ClassicDominoService implements PlayMode {
@@ -85,6 +85,17 @@ export default class ClassicDominoService implements PlayMode {
       target.left === comparable.right || target.right === comparable.right;
   }
 
+  public pickMove(
+    deck: TilesDeck,
+    [leftEnd, rightEnd]: TilesDeck
+  ): [DominoTile, MoveOption] | null {
+    for (const tile of deck) {
+      if (this.checkMovePermission(tile, leftEnd, 'left')) return [tile, 'left'];
+      if (this.checkMovePermission(tile, rightEnd, 'right')) return [tile, 'right'];
+    }
+    return null;
+  }
+
   public ableToPlay(
     currentPlayer: PlayerName,
     playersDecks: PlayersDecks,
@@ -102,14 +113,7 @@ export default class ClassicDominoService implements PlayMode {
     return ableForOthers ? MoveState.SKIPPABLE : MoveState.DEAD_END;
   }
 
-  private availabeToMove(
-    deck: TilesDeck,
-    [leftEnd, rightEnd]: TilesDeck
-  ): boolean {
-    const checkPermission = (t: DominoTile): boolean => (
-      this.checkMovePermission(t, leftEnd, 'left') ||
-      this.checkMovePermission(t, rightEnd, 'right')
-    ); 
-    return deck.some(checkPermission);
+  private availabeToMove(deck: TilesDeck, ends: TilesDeck): boolean {
+    return this.pickMove(deck, ends) !== null;
   }
 }

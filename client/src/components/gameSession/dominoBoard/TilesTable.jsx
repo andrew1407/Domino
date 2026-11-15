@@ -1,235 +1,323 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { getCommonDeck, getFirstTile, getPickedTile, getMovePermission, getSessionEmitter } from '../../../storage/selectors';
-import { coordsContainer, BOUND_LIMITS } from '../../../canvas/params';
-import { makeTilesImgs, checkMoveArea } from '../../../canvas/deck';
-import { placeTiles, drawTiles, drawMoveArea, clearMoveArea } from '../../../canvas/drawing';
-import { tilesTable } from '../../../styles/gameSession/DominoBoard.module.scss';
+import { getCommonDeck, getCurentPlayer, getFirstTile, getPickedTile, getRoundInfo, getSessionEmitter } from '../../../storage/selectors';
+import { layoutChain, insideRect, TILE, GHOST_ROOM } from '../../../canvas/layout';
+import { drawBoard } from '../../../canvas/render';
+import { canPlaceTile } from '../../../tools';
+import styles from '../../../styles/gameSession/DominoBoard.module.scss';
 
-const rectState = {
-  IDLE_OUTSIDE: 0,
-  IDLE_INSIDE: 1,
-  SHOULD_CLEAR: 2,
+const MARGIN = 24;
+const CLICK_DELTA = 6;
+const ZOOM_LIMITS = [0.4, 3];
+const BUTTON_ZOOM = 1.25;
+
+const clampZoom = z => Math.min(ZOOM_LIMITS[1], Math.max(ZOOM_LIMITS[0], z));
+
+const Icon = ({ children }) => (
+  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none"
+    stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+    {children}
+  </svg>
+);
+
+const CenterIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="3.2" />
+    <path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" />
+  </Icon>
+);
+const MinusIcon = () => <Icon><path d="M5 12h14" /></Icon>;
+const PlusIcon = () => <Icon><path d="M12 5v14M5 12h14" /></Icon>;
+
+// base view (zoom = 1, no pan): the placed tiles are centered and fitted into
+// the board with room for the ghost areas on every side, so picking a tile
+// (which adds ghost areas) never moves the board
+const baseView = (layout, size, baseScale) => {
+  const b = layout.tileBounds;
+  if (!b) return { scale: baseScale, centerX: 0, centerY: 0 };
+  const fitScale = Math.min(
+    (size.width - 2 * MARGIN) / (b.maxX - b.minX + 2 * GHOST_ROOM),
+    (size.height - 2 * MARGIN) / (b.maxY - b.minY + 2 * GHOST_ROOM),
+  );
+  return {
+    scale: Math.min(baseScale, fitScale),
+    centerX: (b.minX + b.maxX) / 2,
+    centerY: (b.minY + b.maxY) / 2,
+  };
+};
+
+const makeView = (base, size, zoom, pan) => {
+  const scale = base.scale * zoom;
+  return {
+    scale,
+    originX: size.width / 2 - base.centerX * scale + pan.x,
+    originY: size.height / 2 - base.centerY * scale + pan.y,
+    dpr: typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1,
+  };
 };
 
 export default function TilesTable() {
-  const tableCanvas = useRef(null);
-  const canvasContainer = useRef(null);
-  const [ tileImgs, setTileImgs ] = useState({});
-  const [ centerCoords, setCenterCoords ] = useState(coordsContainer());
-  const [ offsetCoords, setOffsetCoords ] = useState(coordsContainer());
-  const [ dragCoords, setDragCoords ] = useState(coordsContainer());
-  const [ mouseBtnDown, setMouseBtnDown ] = useState(false);
-  const [ mouseDownCoords, setMouseDownCoords ] = useState(coordsContainer());
-  const [ moveArea, setMoveArea ] = useState({ left: null, right: null });
-  const [ cursorCoords, setCursorCoords ] = useState(coordsContainer());
-  const [ areaDrawState, setAreaDrawState ] = useState(rectState.IDLE_OUTSIDE);
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const [ size, setSize ] = useState({ width: 0, height: 0 });
+  const [ camera, setCamera ] = useState({ zoom: 1, pan: { x: 0, y: 0 } });
+  const [ hovered, setHovered ] = useState(null);
+  const [ redraw, setRedraw ] = useState(0);
+  const requestRedraw = useCallback(() => setRedraw(n => n + 1), []);
   const deck = useSelector(getCommonDeck);
   const firstTile = useSelector(getFirstTile);
   const pickedTile = useSelector(getPickedTile);
-  const movePermission = useSelector(getMovePermission);
   const sessionEmitter = useSelector(getSessionEmitter);
-  
-  useEffect(() => {
-    const ctx = tableCanvas.current?.getContext('2d');
-    const container = canvasContainer.current;
-    const refsSet = ctx && container;
-    if (!refsSet) return;
-    window.onresize = () => {
-      ctx.canvas.height = container.clientHeight;
-      ctx.canvas.width = container.clientWidth;
-      const center = {
-        x: container.clientWidth / 2,
-        y: container.clientHeight / 2,
-      };
-      setCenterCoords(center);
-    };
-    window.onresize();
+  const currentPlayer = useSelector(getCurentPlayer);
+  const { currentMove } = useSelector(getRoundInfo);
+  const myMove = !!currentPlayer && currentPlayer === currentMove;
 
-    ctx.canvas.onmousedown = e => {
-      const cursor = coordsContainer(e.clientX, e.clientY);
-      setDragCoords(cursor);
-      setMouseDownCoords({ ...cursor });
-      setMouseBtnDown(true);
-    };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => setSize({
+      width: container.clientWidth,
+      height: container.clientHeight,
+    }));
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  // base scale: tiles take a comfortable part of the board height
+  const baseScale = Math.min(1, Math.max(0.45, size.height / 820));
+
+  const layout = useMemo(() => {
+    if (!size.width || !deck.length) return { tiles: [], ghosts: {}, bounds: null };
+    const halfRow = size.width / (2 * baseScale) - TILE.short - MARGIN;
+    return layoutChain({
+      deck,
+      firstTile,
+      pickedTile: myMove ? pickedTile : null,
+      halfRow,
+    });
+  }, [deck, firstTile, pickedTile, myMove, size.width, baseScale]);
+
+  const base = useMemo(() => baseView(layout, size, baseScale), [layout, size, baseScale]);
+  const view = useMemo(() => makeView(base, size, camera.zoom, camera.pan), [base, size, camera]);
+
+  const ghostState = useMemo(() => ({
+    left: { allowed: canPlaceTile(pickedTile, deck, 'left'), hovered: hovered === 'left' },
+    right: { allowed: canPlaceTile(pickedTile, deck, 'right'), hovered: hovered === 'right' },
+  }), [pickedTile, deck, hovered]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !size.width) return;
+    // resizing reallocates (and clears) the buffer: only on a size change
+    const width = Math.round(size.width * view.dpr);
+    const height = Math.round(size.height * view.dpr);
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    canvas.style.width = `${size.width}px`;
+    canvas.style.height = `${size.height}px`;
+    drawBoard({
+      ctx: canvas.getContext('2d'),
+      view,
+      layout,
+      ghostState,
+      onImageLoad: requestRedraw,
+    });
+  }, [layout, view, ghostState, size, redraw]);
+
+  // new round: reset the camera
+  useEffect(() => {
+    setCamera({ zoom: 1, pan: { x: 0, y: 0 } });
+  }, [firstTile]);
+
+  // the latest values for native event handlers (attached once)
+  const live = useRef({});
+  live.current = { base, size, layout, ghostState, myMove, sessionEmitter, pickedTile };
+
+  // zooms keeping the board point under (x, y) (canvas coordinates) in place
+  const zoomAt = useCallback((factor, x, y) => {
+    setCamera(({ zoom, pan }) => {
+      const { base: b, size: s } = live.current;
+      const nextZoom = clampZoom(zoom * factor);
+      const prev = makeView(b, s, zoom, pan);
+      const scale2 = b.scale * nextZoom;
+      const originX = x - (x - prev.originX) * scale2 / prev.scale;
+      const originY = y - (y - prev.originY) * scale2 / prev.scale;
+      return {
+        zoom: nextZoom,
+        pan: {
+          x: originX - s.width / 2 + b.centerX * scale2,
+          y: originY - s.height / 2 + b.centerY * scale2,
+        },
+      };
+    });
+  }, []);
+
+  const panBy = useCallback((dx, dy) => {
+    setCamera(({ zoom, pan }) => ({ zoom, pan: { x: pan.x + dx, y: pan.y + dy } }));
   }, []);
 
   useEffect(() => {
-    const ctx = tableCanvas.current?.getContext('2d');
-    if (!ctx) return;
-    const container = canvasContainer.current;
-    const refsSet = ctx && container;
-    if (!refsSet) return;
-    const moveDelta = 6;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const pointers = new Map();
+    let drag = null;
+    let pinch = null;
+    let gestureScale = 1;
 
-    ctx.canvas.onmouseup = e => {
-      setMouseBtnDown(false);
-      const { x, y } = mouseDownCoords;
-      const offsetX = Math.abs(e.clientX - x);
-      const offsetY = Math.abs(e.clientY - y);
-      if (offsetX > moveDelta || offsetY > moveDelta) return;
-      if (!pickedTile) return;
-      const { side, permission: ableToMove } = movePermission;
-      if (!ableToMove) return;
-      const sideParams = moveArea[side];
-      
-      const canvasRect = tableCanvas.current?.getBoundingClientRect();
-      const cursorX = e.clientX - canvasRect.left;
-      const cursorY = e.clientY - canvasRect.top;
-      
-      const { insideArea } = checkMoveArea({
-        areaPosition: sideParams,
-        cursor: coordsContainer(cursorX, cursorY),
-        offset: offsetCoords,
-        center: centerCoords,
-      });
-
-      if (insideArea) sessionEmitter?.moveAction(side, pickedTile);
+    const local = e => {
+      const rect = canvas.getBoundingClientRect();
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
     };
-  }, [mouseDownCoords, moveArea, movePermission, offsetCoords, centerCoords, sessionEmitter, pickedTile]);
 
-  useEffect(() => {
-    const ctx = tableCanvas.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.canvas.onmousemove = e => {
-      const cursor = coordsContainer(e.clientX, e.clientY);
-      setCursorCoords(cursor);
-      if (mouseBtnDown) {
-        const nextOffset = {
-          x: offsetCoords.x + dragCoords.x - cursor.x,
-          y: offsetCoords.y + dragCoords.y - cursor.y,
-        };
-        const xMod = Math.abs(nextOffset.x);
-        const yMod = Math.abs(nextOffset.y);
-        if (xMod < BOUND_LIMITS.x && yMod < BOUND_LIMITS.y)
-          setOffsetCoords(nextOffset);
-        setDragCoords({ ...cursor });
+    const ghostAt = point => {
+      const { layout: l, base: b, size: s } = live.current;
+      const { zoom, pan } = cameraRef.current;
+      const v = makeView(b, s, zoom, pan);
+      const boardPoint = { x: (point.x - v.originX) / v.scale, y: (point.y - v.originY) / v.scale };
+      for (const side of ['left', 'right'])
+        if (insideRect(l.ghosts[side], boardPoint)) return side;
+      return null;
+    };
+
+    const pinchState = () => {
+      const [a, b] = [...pointers.values()];
+      return {
+        distance: Math.hypot(a.x - b.x, a.y - b.y),
+        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      };
+    };
+
+    const onDown = e => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch {
+        // capture is optional
+      }
+      pointers.set(e.pointerId, local(e));
+      if (pointers.size === 2) {
+        drag = null;
+        pinch = pinchState();
+      } else if (pointers.size === 1) {
+        const p = local(e);
+        drag = { last: p, start: p };
+      }
+    };
+
+    const onMove = e => {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, local(e));
+      if (pinch && pointers.size >= 2) {
+        e.preventDefault();
+        const next = pinchState();
+        if (pinch.distance > 0) zoomAt(next.distance / pinch.distance, next.mid.x, next.mid.y);
+        panBy(next.mid.x - pinch.mid.x, next.mid.y - pinch.mid.y);
+        pinch = next;
         return;
       }
-      if (!pickedTile) return;
-      const { left, right } = moveArea;
-      if (!(left && right)) return;
-      
-      const canvasRect = tableCanvas.current?.getBoundingClientRect();
-      const cursorX = cursor.x - canvasRect.left;
-      const cursorY = cursor.y - canvasRect.top;
-      const idleInsideState = areaDrawState === rectState.IDLE_INSIDE;
-
-      const checkMoveAction = side => {
-        const { insideArea } = checkMoveArea({
-          areaPosition: moveArea[side],
-          cursor: coordsContainer(cursorX, cursorY),
-          offset: offsetCoords,
-          center: centerCoords,
-        });
-        if (!insideArea) return false;  
-        if (!idleInsideState) {
-          sessionEmitter?.checkMoveAction(side, pickedTile);
-          setAreaDrawState(rectState.IDLE_INSIDE);
-        }
-        return true;
-      };
-
-      for (const side of ['left', 'right'])
-        if (checkMoveAction(side)) return;
-      if (idleInsideState) setAreaDrawState(rectState.SHOULD_CLEAR);
+      if (drag) {
+        const p = local(e);
+        panBy(p.x - drag.last.x, p.y - drag.last.y);
+        drag.last = p;
+        return;
+      }
+      if (e.pointerType === 'mouse') setHovered(ghostAt(local(e)));
     };
-  }, [mouseBtnDown, pickedTile, moveArea, centerCoords, areaDrawState]);
 
+    const onUp = e => {
+      pointers.delete(e.pointerId);
+      if (pinch) {
+        if (pointers.size < 2) pinch = null;
+        // continue dragging with the remaining finger
+        if (pointers.size === 1) {
+          const [p] = pointers.values();
+          drag = { last: p, start: { x: -1e6, y: -1e6 } };
+        } else {
+          drag = null;
+        }
+        return;
+      }
+      const current = drag;
+      drag = null;
+      if (!current || e.type === 'pointercancel') return;
+      const p = local(e);
+      const moved = Math.abs(p.x - current.start.x) > CLICK_DELTA || Math.abs(p.y - current.start.y) > CLICK_DELTA;
+      if (moved) return;
+      const side = ghostAt(p);
+      const { ghostState: g, myMove: mine, sessionEmitter: emitter, pickedTile: picked } = live.current;
+      if (side && g[side].allowed && mine) emitter?.moveAction(side, picked);
+    };
 
-  useEffect(() => {
-    if (!(deck.length && firstTile)) return;
-    const canvasSizeSet = centerCoords.x || centerCoords.y;
-    if (!canvasSizeSet) return;
-    const ctx = tableCanvas.current?.getContext('2d');
-    const container = canvasContainer.current;
-    const refsSet = ctx && container;
-    if (!refsSet) return;
+    // mouse wheel & touchpad: ctrl+wheel is a touchpad pinch, plain wheel zooms by steps
+    const onWheel = e => {
+      e.preventDefault();
+      const p = local(e);
+      const delta = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const factor = e.ctrlKey ?
+        Math.exp(-delta * 0.01) :
+        (delta < 0 ? 1.12 : 1 / 1.12);
+      zoomAt(factor, p.x, p.y);
+    };
 
-    const tilesDeck = [ ...deck ];
-    if (pickedTile) {
-      tilesDeck.push(pickedTile);
-      tilesDeck.unshift(pickedTile);
-    }
-    console.log({ tilesDeck, pickedTile, firstTile });
-    const { imgsCoords, moveSides } = placeTiles({ tilesDeck, pickedTile, firstTile });
-    
-    const imgsEmpty = !Object.keys(tileImgs).length;
-    const imgsNextState = imgsEmpty ? makeTilesImgs() : { ...tileImgs };
-    for (const key in imgsNextState)
-      imgsNextState[key] = { ...imgsNextState[key], ...imgsCoords[key] };
-    setTileImgs(imgsNextState);
-    setMoveArea(moveSides);
-  }, [deck, pickedTile, firstTile]);
+    // Safari (macOS/iOS) gesture events
+    const onGestureStart = e => {
+      e.preventDefault();
+      gestureScale = 1;
+    };
+    const onGestureChange = e => {
+      e.preventDefault();
+      const p = local(e);
+      zoomAt(e.scale / gestureScale, p.x, p.y);
+      gestureScale = e.scale;
+    };
 
-  useEffect(() => {
-    const imgsEmpty = !Object.keys(tileImgs).length;
-    if (imgsEmpty) return;
-    if (!deck.length) return;
-    const canvasSizeSet = centerCoords.x || centerCoords.y;
-    if (!canvasSizeSet) return;
-    const ctx = tableCanvas.current?.getContext('2d');
-    const container = canvasContainer.current;
-    const refsSet = ctx && container;
-    if (!refsSet) return;
+    const onLeave = () => setHovered(null);
 
-    drawTiles({ ctx, centerCoords, offsetCoords, tileImgs });
+    canvas.addEventListener('pointerdown', onDown);
+    canvas.addEventListener('pointermove', onMove);
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
+    canvas.addEventListener('pointerleave', onLeave);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('gesturestart', onGestureStart, { passive: false });
+    canvas.addEventListener('gesturechange', onGestureChange, { passive: false });
+    return () => {
+      canvas.removeEventListener('pointerdown', onDown);
+      canvas.removeEventListener('pointermove', onMove);
+      canvas.removeEventListener('pointerup', onUp);
+      canvas.removeEventListener('pointercancel', onUp);
+      canvas.removeEventListener('pointerleave', onLeave);
+      canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('gesturestart', onGestureStart);
+      canvas.removeEventListener('gesturechange', onGestureChange);
+    };
+  }, [zoomAt, panBy]);
 
-  }, [tileImgs, centerCoords, offsetCoords]);
+  const cameraRef = useRef(camera);
+  cameraRef.current = camera;
 
-  useEffect(() => {
-    if (!movePermission) return;
-    const ctx = tableCanvas.current?.getContext('2d');
-    if (!ctx) return;
-    const { side, permission: ableToMove } = movePermission;
-    const sideParams = moveArea[side];
-    
-    const canvasRect = tableCanvas.current?.getBoundingClientRect();
-    const cursorX = cursorCoords.x - canvasRect.left;
-    const cursorY = cursorCoords.y - canvasRect.top;
-
-    const { rectParams } = checkMoveArea({
-      areaPosition: sideParams,
-      cursor: coordsContainer(cursorX, cursorY),
-      offset: offsetCoords,
-      center: centerCoords,
-    });
-
-    if (!rectParams) return;
-    drawMoveArea({ ctx, rectParams, ableToMove })
-    setAreaDrawState(rectState.IDLE_INSIDE);
-
-  }, [movePermission]);
-
-  useEffect(() => {
-    if (areaDrawState !== rectState.SHOULD_CLEAR) return;
-    setAreaDrawState(rectState.IDLE_OUTSIDE);
-
-    const ctx = tableCanvas.current?.getContext('2d');
-    if (!ctx) return;
-    if (!movePermission) return;
-
-    const { side } = movePermission;
-    const sideParams = moveArea[side];
-
-    const canvasRect = tableCanvas.current?.getBoundingClientRect();
-    const cursorX = cursorCoords.x - canvasRect.left;
-    const cursorY = cursorCoords.y - canvasRect.top;
-
-    const { rectParams } = checkMoveArea({
-      areaPosition: sideParams,
-      cursor: coordsContainer(cursorX, cursorY),
-      offset: offsetCoords,
-      center: centerCoords,
-    });
-
-    if (rectParams) clearMoveArea({ ctx, rectParams });
-
-  }, [areaDrawState]);
+  const zoomCenter = useCallback(factor => zoomAt(factor, size.width / 2, size.height / 2), [zoomAt, size]);
+  const resetView = useCallback(() => setCamera({ zoom: 1, pan: { x: 0, y: 0 } }), []);
+  const moved = camera.pan.x || camera.pan.y || camera.zoom !== 1;
+  const cursor = hovered && ghostState[hovered]?.allowed ? 'pointer' : 'grab';
 
   return (
-    <div ref={canvasContainer} className={tilesTable}>
-      <canvas ref={tableCanvas}></canvas>
+    <div ref={containerRef} className={styles.tilesTable}>
+      <canvas ref={canvasRef} style={{ cursor }} data-testid="board-canvas" />
+      {layout.tiles.length > 0 && (
+        <div className={styles.viewControls}>
+          {moved ? (
+            <button type="button" title="center the board" aria-label="center the board" onClick={resetView}>
+              <CenterIcon />
+            </button>
+          ) : null}
+          <button type="button" title="zoom out" aria-label="zoom out" onClick={() => zoomCenter(1 / BUTTON_ZOOM)}>
+            <MinusIcon />
+          </button>
+          <button type="button" title="zoom in" aria-label="zoom in" onClick={() => zoomCenter(BUTTON_ZOOM)}>
+            <PlusIcon />
+          </button>
+        </div>
+      )}
     </div>
   );
-};
+}

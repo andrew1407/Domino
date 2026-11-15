@@ -5,7 +5,7 @@ import {
   FastifyAdapter
 } from '@nestjs/platform-fastify';
 import { WsAdapter } from '@nestjs/platform-ws';
-import AppModule from './app/app.module';
+import AppModule from './app/app.module.js';
 
 (async () => {
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();

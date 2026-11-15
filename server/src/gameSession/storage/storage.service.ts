@@ -1,11 +1,11 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { createClient, RedisClientType } from 'redis';
-import DominoTile, { EndValue, TilesDeck } from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import { MoveOption, PlayersDecks } from '../playMode/PlayMode';
-import { PlayersScore } from '../playMode/ScoreKeeper';
-import { REDIS_CLIENT } from './storage.options';
-import StorageClient, { SessionData, TileOptions } from './StorageClient';
+import DominoTile, { EndValue, TilesDeck } from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import { MoveOption, PlayersDecks } from '../playMode/PlayMode.js';
+import { PlayersScore } from '../playMode/ScoreKeeper.js';
+import { REDIS_CLIENT } from './storage.options.js';
+import StorageClient, { SessionData, TileOptions } from './StorageClient.js';
 
 @Injectable()
 export default class StorageService implements OnApplicationShutdown, StorageClient {
@@ -36,12 +36,12 @@ export default class StorageService implements OnApplicationShutdown, StorageCli
 
   public async sessionExists(sessionId: string): Promise<boolean> {
     const field: string = this.prefixedNamespace('sessions', sessionId);
-    return this.dbClient.EXISTS(field);
+    return (await this.dbClient.EXISTS(field)) > 0;
   }
 
   public async nextRound(sessionId: string): Promise<void> {
     const sessionField: string = this.prefixedNamespace('sessions', sessionId);
-    const currentRound: number = parseInt(await this.dbClient.HGET(sessionField, 'round'), 10);
+    const currentRound: number = parseInt((await this.dbClient.HGET(sessionField, 'round')) as string, 10);
     await this.dbClient.HSET(sessionField, 'round', currentRound + 1);
     await this.clearSessionData(sessionId);
   }
@@ -70,7 +70,7 @@ export default class StorageService implements OnApplicationShutdown, StorageCli
 
   public async getCurrentMove(sessionId: string): Promise<PlayerName> {
     const field: string = this.prefixedNamespace('sessions', sessionId);
-    const player: string | null = await this.dbClient.HGET(field, 'current_move');
+    const player: string | null = (await this.dbClient.HGET(field, 'current_move')) as string | null;
     if (!player) throw new Error('no such user exists');
     return player as PlayerName;
   }
@@ -83,7 +83,7 @@ export default class StorageService implements OnApplicationShutdown, StorageCli
 
   public async getFromStock(sessionId: string): Promise<DominoTile> {
     const field: string = this.prefixedNamespace('stock', sessionId);
-    const tile: string | null = await this.dbClient.SRANDMEMBER(field);
+    const tile: string | null = (await this.dbClient.SRANDMEMBER(field)) as string | null;
     if (!tile) throw new Error('there are no tiles in the stock');
     await this.dbClient.SREM(field, tile);
     return this.parseTile(tile);
@@ -114,10 +114,10 @@ export default class StorageService implements OnApplicationShutdown, StorageCli
     const field: string = this.prefixedNamespace('deck', sessionId);
     const deckSize: number = await this.dbClient.LLEN(field);
     if (!deckSize) throw new Error('the deck is empty');
-    const leftEndStr: string = await this.dbClient.LINDEX(field, 0);
+    const leftEndStr: string = (await this.dbClient.LINDEX(field, 0)) as string;
     const leftEnd: DominoTile = this.parseTile(leftEndStr);
     if (deckSize === 1) return [leftEnd, leftEnd.copy()];
-    const rightEndStr: string = await this.dbClient.LINDEX(field, -1);
+    const rightEndStr: string = (await this.dbClient.LINDEX(field, -1)) as string;
     const rightEnd: DominoTile = this.parseTile(rightEndStr);
     return [leftEnd, rightEnd];
   }

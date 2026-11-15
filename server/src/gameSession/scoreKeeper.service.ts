@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import DominoTile, { TilesDeck } from './entities/DominoTile';
-import { PlayerName } from './entities/Player';
-import { PlayersDecks } from './playMode/PlayMode';
-import ScoreKeeper, { PlayersScore } from './playMode/ScoreKeeper';
+import DominoTile, { TilesDeck } from './entities/DominoTile.js';
+import { PlayerName } from './entities/Player.js';
+import { PlayersDecks } from './playMode/PlayMode.js';
+import ScoreKeeper, { PlayersScore } from './playMode/ScoreKeeper.js';
 
 @Injectable()
 export default class ScoreKeeperService implements ScoreKeeper {

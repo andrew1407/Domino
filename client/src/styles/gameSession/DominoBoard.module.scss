@@ -1,33 +1,100 @@
-@import "../tools.scss";
+@use "../tools" as *;
 
 .boardContainer {
-  background-color: #ddc695;
-  grid-column: 1 / 5;
-  grid-row: 2 / 14;
+  grid-area: board;
+  position: relative;
+  min-height: 0;
+  border-radius: $radius;
+  border: 2px solid rgba(155, 72, 5, 0.55);
+  background: radial-gradient(ellipse at center, #e6d3a6 0%, $cream-mid-theme 60%, #cfb47b 100%);
+  box-shadow: inset 0 0 40px rgba(120, 70, 10, 0.25), $shadow;
+  overflow: hidden;
+}
+
+.peerWaiting {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  overflow-y: auto;
 }
 
 .loadingScreen {
-  @include flex-display(column, none);
+  @include flex-display(column, center);
   height: 100%;
   width: 100%;
   text-align: center;
   align-items: center;
-  padding-top: 8%;
+  gap: 10px;
 }
 
 .laodingTitle {
-  font-size: 340%;
+  margin: 0;
+  font-size: 200%;
+  color: $brown-dark-theme;
+}
+
+.loadingHint {
+  margin: 0;
+  font-size: 105%;
+  color: #5a3d12;
 }
 
 .tilesLoadContaner {
-  width: 100%;
+  min-height: 130px;
 }
 
 .loadingTile {
   padding: 0.5%;
+  filter: drop-shadow(2px 3px 3px rgba(60, 30, 0, 0.3));
 }
 
 .tilesTable {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
+
+  canvas {
+    display: block;
+    touch-action: none;
+  }
+}
+
+.viewControls {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  @include flex-display(row, none);
+  gap: 6px;
+
+  button {
+    @include button;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background-color: rgba(247, 236, 198, 0.92);
+  }
+}
+
+@media (max-width: 900px) {
+  .laodingTitle {
+    font-size: 150%;
+  }
+
+  .loadingHint {
+    font-size: 95%;
+    padding: 0 16px;
+  }
+
+  .loadingTile {
+    height: 70px;
+  }
+
+  .tilesLoadContaner {
+    min-height: 80px;
+  }
 }

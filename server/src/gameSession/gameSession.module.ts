@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import StorageService from 'src/gameSession/storage/storage.module';
-import ClassicDominoService from './classicDomino.service';
-import ScoreKeeperService from './scoreKeeper.service';
-import GameSessionController from './gameSession.controller';
-import GameSessionGateway from './gameSession.gateway';
-import GameSessionService from './gameSession.service';
-import { CLASSIC_DOMINO_SERVICE, SCORE_KEEPER_SERVICE } from './gameSession.options';
+import StorageService from './storage/storage.module.js';
+import ClassicDominoService from './classicDomino.service.js';
+import ScoreKeeperService from './scoreKeeper.service.js';
+import GameSessionController from './gameSession.controller.js';
+import GameSessionGateway from './gameSession.gateway.js';
+import GameSessionService from './gameSession.service.js';
+import { CLASSIC_DOMINO_SERVICE, SCORE_KEEPER_SERVICE } from './gameSession.options.js';
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 {
   "HTTP requests": {
-    "GET /domino-session?players=<number>&score=<number>": "creates a new session with given params (from query) and gives a new session id",
-    "POST /domino-session": "creates a new session with given params (from body) and gives a new session id"
+    "GET /domino-session?players=<number>&score=<number>&bots=<number>": "creates a new session with given params (from query) and gives a new session id; bots (optional, 0 by default) is the number of bot players among all players (must be less than players)",
+    "POST /domino-session": "creates a new session with given params ({ players, score, bots? } from body) and gives a new session id"
   },
   "WebSocket commands": {
     "server events": {

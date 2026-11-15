@@ -1,5 +1,5 @@
-import { PlayerName } from '../entities/Player';
-import { PlayersDecks } from './PlayMode';
+import { PlayerName } from '../entities/Player.js';
+import { PlayersDecks } from './PlayMode.js';
 
 export type PlayersScore = Partial<Record<PlayerName, number>>;
 

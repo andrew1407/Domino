@@ -1,38 +1,130 @@
+@use "sass:list";
+
+// palette (the original color gamma)
 $green-theme: rgb(127, 194, 73);
 $green-light-theme: rgb(136, 180, 100);
+$green-dark-theme: rgb(74, 128, 38);
 
 $cream-theme: #fffdd0;
+$cream-light-theme: #f7ecc6;
+$cream-mid-theme: #ddc695;
 $cream-dark-theme: #cca85c;
 
 $brown-theme: rgb(155, 72, 5);
+$brown-dark-theme: rgb(104, 15, 33);
+$orange-theme: rgb(248, 172, 85);
+$wood-theme: rgb(197, 134, 75);
 
+$radius: 12px;
+$radius-sm: 8px;
+$shadow: 0 3px 10px rgba(90, 45, 0, 0.18);
+$shadow-strong: 0 8px 28px rgba(60, 25, 0, 0.35);
+
+$font-title: "Orbitron", var(--font-body), sans-serif;
 
 @mixin flex-display($params...) {
   display: flex;
-  flex-direction: nth($params, 1);
-  justify-content: nth($params, 2);
+  flex-direction: list.nth($params, 1);
+  justify-content: list.nth($params, 2);
 }
 
 @mixin block-decoration($params...) {
-  background-color: nth($params, 1);
-  @if nth($params, 2) == all {
-    border: nth($params, 4) solid nth($params, 3);
+  background-color: list.nth($params, 1);
+  @if list.nth($params, 2) == all {
+    border: list.nth($params, 4) solid list.nth($params, 3);
   } @else {
-    border-#{nth($params, 2)}: nth($params, 4) solid nth($params, 3);
+    border-#{list.nth($params, 2)}: list.nth($params, 4) solid list.nth($params, 3);
+  }
+}
+
+@mixin panel($bg: $cream-mid-theme) {
+  background-color: $bg;
+  border: 2px solid rgba(155, 72, 5, 0.55);
+  border-radius: $radius;
+  box-shadow: $shadow;
+}
+
+@mixin button($bg: $cream-light-theme, $color: $brown-dark-theme) {
+  font-family: inherit;
+  font-weight: 700;
+  color: $color;
+  background-color: $bg;
+  border: 2px solid $brown-theme;
+  border-radius: $radius-sm;
+  padding: 6px 16px;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 2px 0 rgba(155, 72, 5, 0.45);
+  transition: transform 0.08s, box-shadow 0.08s, background-color 0.15s, opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 0 rgba(155, 72, 5, 0.45);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 rgba(155, 72, 5, 0.45);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid $green-theme;
+    outline-offset: 2px;
+  }
+}
+
+@mixin primary-button {
+  @include button($green-theme, #fff);
+  border-color: $green-dark-theme;
+  box-shadow: 0 3px 0 $green-dark-theme;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 4px 0 $green-dark-theme;
+  }
+
+  &:active:not(:disabled) {
+    box-shadow: 0 1px 0 $green-dark-theme;
+  }
+}
+
+@mixin field {
+  font-family: inherit;
+  font-size: 105%;
+  color: #3b2508;
+  background-color: $cream-light-theme;
+  border: 2px solid rgba(155, 72, 5, 0.6);
+  border-radius: $radius-sm;
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: $brown-theme;
+    box-shadow: 0 0 0 3px rgba(127, 194, 73, 0.45);
   }
 }
 
 @mixin scrollbar($params...) {
+  scrollbar-color: list.nth($params, 3) transparent;
+
   &::-webkit-scrollbar {
-    @if nth($params, 1) == vertical {
-      width: nth($params, 2);
-    } @else if nth($params, 1) == horizontal {
-      height: nth($params, 2);
+    @if list.nth($params, 1) == vertical {
+      width: list.nth($params, 2);
+    } @else if list.nth($params, 1) == horizontal {
+      height: list.nth($params, 2);
     }
   }
 
   &::-webkit-scrollbar-thumb {
-    background: nth($params, 3);
-    border-radius: nth($params, 4);
-  }  
+    background: list.nth($params, 3);
+    border-radius: list.nth($params, 4);
+  }
 }

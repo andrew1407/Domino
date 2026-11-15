@@ -1,4 +1,4 @@
-import DominoTile, { EndValue } from '../entities/DominoTile';
+import DominoTile, { EndValue } from '../entities/DominoTile.js';
 
 describe('new instance (of)', (): void => {
   it.each([

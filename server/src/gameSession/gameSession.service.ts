@@ -1,15 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
-import DominoTile, { TilesDeck } from './entities/DominoTile';
-import { availablePlayers, PlayerName } from './entities/Player';
-import { CLASSIC_DOMINO_SERVICE, SCORE_KEEPER_SERVICE } from './gameSession.options';
-import MoveState from './playMode/MoveState';
-import PlayMode, { MoveOption, PlayersDecks } from './playMode/PlayMode';
-import ScoreKeeper, { PlayersScore } from './playMode/ScoreKeeper';
-import { STORAGE_CLIENT } from './storage/storage.options';
-import StorageClient, { SessionData } from './storage/StorageClient';
-import GameSessionError from './wsTools/GameSessionError';
-import { DecksInfoRes, PlayerRes, MoveRes, RoundRes } from './wsTools/responseTypes';
+import { randomUUID } from 'node:crypto';
+import DominoTile, { TilesDeck } from './entities/DominoTile.js';
+import { availablePlayers, PlayerName } from './entities/Player.js';
+import { CLASSIC_DOMINO_SERVICE, SCORE_KEEPER_SERVICE } from './gameSession.options.js';
+import MoveState from './playMode/MoveState.js';
+import PlayMode, { MoveOption, PlayersDecks } from './playMode/PlayMode.js';
+import ScoreKeeper, { PlayersScore } from './playMode/ScoreKeeper.js';
+import { STORAGE_CLIENT } from './storage/storage.options.js';
+import StorageClient, { SessionData } from './storage/StorageClient.js';
+import GameSessionError from './wsTools/GameSessionError.js';
+import { DecksInfoRes, PlayerRes, MoveRes, RoundRes } from './wsTools/responseTypes.js';
 
 @Injectable()
 export default class GameSessionService {
@@ -21,12 +21,15 @@ export default class GameSessionService {
 
   public async makeNewSession(
     players: number,
-    finalScore: number
+    finalScore: number,
+    bots: number = 0
   ): Promise<string> {
     const invalidPlayersCount: boolean = players < 2 || players > 4;
     const invalidScore: boolean = finalScore <= 0 || finalScore >= 26_000_000;
-    if (invalidPlayersCount || invalidScore) throw GameSessionError.badRequest();
-    const sessionId: string = uuidv4();
+    const invalidBotsCount: boolean = !Number.isInteger(bots) || bots < 0 || bots >= players;
+    if (invalidPlayersCount || invalidScore || invalidBotsCount)
+      throw GameSessionError.badRequest();
+    const sessionId: string = randomUUID();
     await this.storage.createSession(sessionId, finalScore, players);
     return sessionId;
   }
@@ -142,6 +145,19 @@ export default class GameSessionService {
       tile,
       ['deck', 'tile']
     );
+  }
+
+  public async pickBotMove(
+    sessionId: string,
+    player: PlayerName
+  ): Promise<[DominoTile, MoveOption] | null> {
+    await this.sessionExists(sessionId);
+    await this.playerExists(sessionId, player);
+    const [playersDecks, ends]: [PlayersDecks, TilesDeck] = await Promise.all([
+      this.storage.getPlayersDecks(sessionId),
+      this.storage.getDeckEnds(sessionId),
+    ]);
+    return this.playMode.pickMove(playersDecks[player] ?? [], ends);
   }
 
   public async ableToPlay(

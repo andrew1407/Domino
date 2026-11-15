@@ -1,0 +1,82 @@
+@use "./modal" as *;
+@use "../tools" as *;
+
+.background {
+  @include modal-bkg;
+  @include flex-display(column, center);
+  align-items: center;
+}
+
+.modal {
+  @include panel($cream-mid-theme);
+  @include flex-display(column, none);
+  align-items: center;
+  width: min(440px, calc(100vw - 32px));
+  padding: 20px 24px;
+  text-align: center;
+  box-shadow: $shadow-strong;
+  animation: pop 0.2s ease-out;
+
+  h1 {
+    margin: 2px 0 12px;
+    font-size: 150%;
+    color: $brown-dark-theme;
+  }
+
+  p {
+    font-size: 108%;
+  }
+}
+
+.note {
+  margin: 0 0 10px;
+  font-style: italic;
+}
+
+.scores {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 4px;
+  font-size: 112%;
+
+  td {
+    padding: 7px 12px;
+    background: rgba(255, 253, 208, 0.55);
+    text-align: left;
+  }
+
+  td:first-child {
+    border-radius: $radius-sm 0 0 $radius-sm;
+  }
+
+  td:last-child {
+    border-radius: 0 $radius-sm $radius-sm 0;
+    text-align: right;
+    font-weight: 800;
+  }
+
+  small {
+    font-size: 72%;
+    margin-left: 6px;
+    opacity: 0.75;
+  }
+}
+
+.winner td {
+  background-color: rgba(127, 194, 73, 0.6);
+}
+
+.actions {
+  margin-top: 16px;
+}
+
+.btn {
+  @include primary-button;
+  display: inline-block;
+  font-size: 108%;
+}
+
+@keyframes pop {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

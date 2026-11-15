@@ -1,6 +1,6 @@
-import AppController from '../app.controller';
-import AppService from '../app.service';
-import commands from '../commands.json';
+import AppController from '../app.controller.js';
+import AppService from '../app.service.js';
+import commands from '../commands.json' with { type: 'json' };
 
 describe('getCommandsList', (): void => {
   const controller: AppController = new AppController(new AppService());

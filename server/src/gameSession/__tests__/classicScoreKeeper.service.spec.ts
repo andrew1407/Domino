@@ -1,8 +1,8 @@
-import ScoreKeeperService from '../scoreKeeper.service';
-import DominoTile from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import { PlayersDecks } from '../playMode/PlayMode';
-import { PlayersScore } from '../playMode/ScoreKeeper';
+import ScoreKeeperService from '../scoreKeeper.service.js';
+import DominoTile from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import { PlayersDecks } from '../playMode/PlayMode.js';
+import { PlayersScore } from '../playMode/ScoreKeeper.js';
 
 type TestDataSumUp = {
   players: number,

@@ -21,13 +21,6 @@ export default class SessionEmitter {
     });
   }
 
-  checkMoveAction(side, tile) {
-    this.#sendData({
-      event: 'moveCheck',
-      data: { side, tile, session: this.#sessionId },
-    });
-  }
-
   moveAction(side, tile) {
     this.#sendData({
       event: 'moveAction',

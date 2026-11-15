@@ -1,4 +1,5 @@
-import { elementsContainer, listContainer, description, subheader } from '../../styles/CommandsList.module.scss';
+import styles from '../../styles/CommandsList.module.scss';
+const { elementsContainer, listContainer, description, subheader } = styles;
 
 const subListMapper = ([ key, value ]) => (
   typeof value === 'string' ?

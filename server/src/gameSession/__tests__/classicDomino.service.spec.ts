@@ -1,8 +1,8 @@
-import ClassicDominoService from '../classicDomino.service'
-import DominoTile, { TilesDeck } from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import MoveState from '../playMode/MoveState';
-import { MoveOption, PlayersDecks } from '../playMode/PlayMode';
+import ClassicDominoService from '../classicDomino.service.js'
+import DominoTile, { TilesDeck } from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import MoveState from '../playMode/MoveState.js';
+import { MoveOption, PlayersDecks } from '../playMode/PlayMode.js';
 
 type testDataDistTiles = {
   playersNumber: number,
@@ -477,4 +477,25 @@ describe('classic (traditional) domino class', (): void => {
       expect(result).toEqual(MoveState.DEAD_END);
     })
   })
-})
+
+  describe('pickMove', (): void => {
+    it('should pick the first tile matching the left end', (): void => {
+      const deck: TilesDeck = [DominoTile.of(1, 2), DominoTile.of(3, 4)];
+      const ends: TilesDeck = [DominoTile.of(4, 6), DominoTile.of(5, 5)];
+      expect(rulesHandler.pickMove(deck, ends)).toStrictEqual([DominoTile.of(3, 4), 'left']);
+    });
+
+    it('should pick the right end when the left one does not match', (): void => {
+      const deck: TilesDeck = [DominoTile.of(5, 2)];
+      const ends: TilesDeck = [DominoTile.of(0, 6), DominoTile.of(1, 5)];
+      expect(rulesHandler.pickMove(deck, ends)).toStrictEqual([DominoTile.of(5, 2), 'right']);
+    });
+
+    it('should return null if there are no tiles to play', (): void => {
+      const deck: TilesDeck = [DominoTile.of(1, 1), DominoTile.of(2, 3)];
+      const ends: TilesDeck = [DominoTile.of(4, 6), DominoTile.of(5, 5)];
+      expect(rulesHandler.pickMove(deck, ends)).toBeNull();
+      expect(rulesHandler.pickMove([], ends)).toBeNull();
+    });
+  });
+});

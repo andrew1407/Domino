@@ -1,4 +1,5 @@
-import { modalBackground, modalComponent, messageTitle, messageText, modalButton } from '../../styles/modals/ErrorMessageModal.module.scss';
+import styles from '../../styles/modals/ErrorMessageModal.module.scss';
+const { modalBackground, modalComponent, messageTitle, messageText, modalButton } = styles;
 
 export default function ErrorMessageModal({ visible, message, onClick }) {
   return (

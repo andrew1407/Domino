@@ -1,7 +1,7 @@
-import DominoTile, { TilesDeck } from '../entities/DominoTile';
-import { PlayerName } from '../entities/Player';
-import { MoveOption, PlayersDecks } from '../playMode/PlayMode';
-import { PlayersScore } from '../playMode/ScoreKeeper';
+import DominoTile, { TilesDeck } from '../entities/DominoTile.js';
+import { PlayerName } from '../entities/Player.js';
+import { MoveOption, PlayersDecks } from '../playMode/PlayMode.js';
+import { PlayersScore } from '../playMode/ScoreKeeper.js';
 
 export type SessionData = {
   score: number,

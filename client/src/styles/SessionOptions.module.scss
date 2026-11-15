@@ -1,116 +1,186 @@
-@import "./tools.scss";
-
-$cream-light: #ddc695; 
-$dried-blood: rgb(104, 15, 33);
+@use "./tools" as *;
 
 .optionsContainer {
-  @include block-decoration($cream-dark-theme, all, $brown-theme, 6px);
+  @include panel($cream-dark-theme);
   @include flex-display(column, none);
-  margin: 8% auto;
-  width: 50%;
-  height: 40vh;
+  margin: 6vh auto;
+  width: min(680px, calc(100% - 32px));
+  overflow: hidden;
 }
 
 .optionsList {
-  @include block-decoration($cream-dark-theme, bottom, $brown-theme, 4px);
   @include flex-display(row, none);
+  background-color: rgba(155, 72, 5, 0.15);
+  padding: 6px;
+  gap: 6px;
   text-align: center;
-
-  div:not(div:last-child) {
-    border-right: 4px solid $brown-theme;
-  }
 }
 
 .optionBlock {
-  width: 50%;
-  padding: 1.5% 0;
-  font-size: 150%;
+  flex: 1;
+  padding: 10px 0;
+  border-radius: $radius-sm;
+  font-size: 112%;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
 
   & > * {
-    margin: 0
+    margin: 0;
+  }
+
+  &:hover {
+    background-color: rgba(255, 253, 208, 0.4);
   }
 }
 
 .pickedOptionBlock {
-  font-weight: bold;
-  font-size: 165%;
-  color: $dried-blood;
-  background-color: $cream-light;
+  color: $brown-dark-theme;
+  background-color: $cream-mid-theme;
+  box-shadow: $shadow;
+
+  &:hover {
+    background-color: $cream-mid-theme;
+  }
+}
+
+.optionContent {
+  @include flex-display(column, center);
+  flex: 1;
+  min-height: 300px;
+  padding: 22px;
+  background-color: $cream-mid-theme;
 }
 
 .joinOptionEntries {
   @include flex-display(row, center);
-  margin: auto;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
-  min-width: 90%;
 
   label {
-    font-size: 140%;
-    margin-right: 2%;
-    font-style: italic;
+    font-size: 115%;
+    font-weight: 700;
   }
-  
+
   input[type=text] {
-    @include block-decoration($cream-light, all, $brown-theme, 3px);
-    width: 65%;
-    padding: 0.75% 0.5%;
-    font-size: 120%;
-    outline: none;
+    @include field;
+    flex: 1;
+    min-width: 220px;
   }
 }
-
 
 .createOptionEntries {
-  @include flex-display(column, space-evenly);
-  height: 100%;
+  @include flex-display(column, none);
+  gap: 14px;
   align-items: center;
 }
 
-.playersSelector {
-  @include flex-display(row, center);
-  align-items: center;
-
-  label {
-    margin-right: 10%;
-    font-size: 150%;
-    font-style: italic;
-  }
-
-  select {
-    @include block-decoration($cream-light, all, $brown-theme, 3px);
-    font-size: 110%;
-    outline: none;
-    padding: 1% 15%;
-  }
+.modeSelector {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background-color: rgba(155, 72, 5, 0.15);
+  margin-bottom: 4px;
 }
 
-.scoreContainer {
-  @include flex-display(row, center);
+.modeBtn {
+  font-family: inherit;
+  font-size: 105%;
+  font-weight: 700;
+  padding: 7px 18px;
+  border: none;
+  border-radius: 999px;
+  color: $brown-dark-theme;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.modeBtnPicked {
+  color: #fff;
+  background-color: $green-theme;
+  box-shadow: 0 2px 6px rgba(74, 128, 38, 0.5);
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 140px 130px;
   align-items: center;
-  min-width: 90%; 
+  gap: 14px;
 
   label {
-    margin-right: 3%;
-    font-size: 150%;
-    font-style: italic;
+    text-align: right;
+    font-size: 112%;
+    font-weight: 700;
   }
-  
-  input[type=number] {
-    @include block-decoration($cream-light, all, $brown-theme, 3px);
-    width: 26%;
-    padding: 0.75% 0.5%;
+
+  select, input[type=number] {
+    @include field;
+    width: 100%;
     text-align: center;
-    font-size: 120%;
-    outline: none;
   }
+
+  select:disabled {
+    opacity: 0.65;
+  }
+}
+
+.summary {
+  margin: 2px 0;
+  font-size: 104%;
+  font-style: italic;
+  text-align: center;
+  color: #5a3d12;
 }
 
 .optionsSubmitBtn {
-  @include block-decoration($cream-light, all, $brown-theme, 3.5px);
-  margin-left: 2%;
-  padding: 0.5% 3.5%;
-  font-weight: bold;
-  font-size: 130%;
-  color: $dried-blood;
-  outline: none;
+  @include primary-button;
+  font-size: 118%;
+  padding: 8px 34px;
+}
+
+@media (max-width: 600px) {
+  .optionsContainer {
+    margin: 12px auto;
+    width: calc(100% - 20px);
+  }
+
+  .optionBlock {
+    font-size: 92%;
+    padding: 10px 2px;
+  }
+
+  .optionContent {
+    padding: 16px 12px;
+    min-height: 0;
+  }
+
+  .modeBtn {
+    padding: 8px 12px;
+    font-size: 95%;
+  }
+
+  .fieldRow {
+    grid-template-columns: 110px 120px;
+
+    label {
+      font-size: 100%;
+    }
+
+    select, input[type=number] {
+      min-height: 40px;
+    }
+  }
+
+  .joinOptionEntries {
+    flex-direction: column;
+    align-items: stretch;
+
+    input[type=text] {
+      min-width: 0;
+      min-height: 42px;
+    }
+  }
 }

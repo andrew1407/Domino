@@ -1,21 +1,46 @@
-@import "./tools.scss";
+@use "./tools" as *;
+
+@font-face {
+  font-family: "Orbitron";
+  src: url("../../public/fonts/Orbitron.ttf");
+  font-display: swap;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 html {
-  height: 100vh;
+  height: 100%;
 }
 
 body {
-  background: $cream-theme;
   margin: 0;
+  height: 100%;
+  font-family: var(--font-body), system-ui, sans-serif;
+  color: #3b2508;
+  background: $cream-theme;
+  -webkit-font-smoothing: antialiased;
 
   #__next {
-    height: 100vh;
+    height: 100%;
     display: flex;
     flex-direction: column;
   }
 }
 
-@font-face {
-  font-family: "Orbitron";
-  src: url("/fonts/Orbitron.ttf");
+h1, h2, h3 {
+  font-family: $font-title;
+  letter-spacing: 0.02em;
+}
+
+code {
+  font-size: 92%;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(155, 72, 5, 0.12);
+}
+
+a {
+  color: $brown-theme;
 }

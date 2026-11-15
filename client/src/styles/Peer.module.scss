@@ -1,0 +1,134 @@
+@use "./tools" as *;
+
+.btn {
+  @include button;
+}
+
+.primaryBtn {
+  @include primary-button;
+}
+
+.muted {
+  margin: 0;
+  color: #5a3d12;
+  font-size: 95%;
+}
+
+.ok {
+  color: $green-dark-theme;
+  font-weight: 700;
+}
+
+.error {
+  margin: 0;
+  color: $brown-dark-theme;
+  font-weight: 700;
+}
+
+.codeBox {
+  @include flex-display(column, none);
+  gap: 8px;
+
+  textarea {
+    @include field;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    font-family: ui-monospace, monospace;
+    font-size: 80%;
+    word-break: break-all;
+  }
+}
+
+.codeActions {
+  @include flex-display(row, none);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.replyForm {
+  display: flex;
+  gap: 8px;
+
+  input {
+    @include field;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.invites {
+  @include panel($cream-light-theme);
+  @include flex-display(column, none);
+  gap: 10px;
+  width: min(560px, 100%);
+  max-height: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  overflow-y: auto;
+  text-align: left;
+
+  h2 {
+    margin: 0;
+    color: $brown-dark-theme;
+    font-size: 125%;
+  }
+}
+
+.slots {
+  @include flex-display(column, none);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  @include flex-display(column, none);
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: $radius-sm;
+  background-color: rgba(155, 72, 5, 0.08);
+}
+
+.slotHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.joinPage {
+  @include panel($cream-light-theme);
+  @include flex-display(column, none);
+  gap: 12px;
+  width: min(560px, calc(100% - 32px));
+  box-sizing: border-box;
+  margin: 24px auto;
+  padding: 18px 20px;
+
+  h1 {
+    margin: 0;
+    color: $brown-dark-theme;
+    font-size: 150%;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 600px) {
+  .replyForm {
+    flex-direction: column;
+
+    input {
+      min-height: 42px;
+    }
+  }
+
+  .joinPage {
+    padding: 14px;
+  }
+}

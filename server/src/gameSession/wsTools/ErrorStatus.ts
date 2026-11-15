@@ -1,4 +1,4 @@
-const enum ErrorStatus {
+enum ErrorStatus {
   NONE = 'NONE',
   SESSION_NOT_EXISTS = 'SESSION_NOT_EXISTS',
   SESSION_FORBIDDEN = 'SESSION_FORBIDDEN',

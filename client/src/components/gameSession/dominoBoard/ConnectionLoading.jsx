@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getTileImagePath } from '../../../tools';
-import { loadingScreen, laodingTitle, tilesLoadContaner, loadingTile } from '../../../styles/gameSession/DominoBoard.module.scss';
+import styles from '../../../styles/gameSession/DominoBoard.module.scss';
+const { loadingScreen, laodingTitle, tilesLoadContaner, loadingTile } = styles;
 
-export default function ConnectionLoading() {
+export default function ConnectionLoading({ title = 'Waiting for players...', hint }) {
   const [ loadingTiles, setLoadingTiles ] = useState([]);
 
   useEffect(() => {
@@ -10,7 +11,8 @@ export default function ConnectionLoading() {
       const currentCount = loadingTiles.length;
       const maxTilesCount = 7;
       const loadingDelay = 400;
-      await new Promise(res => setTimeout(res, loadingDelay));   
+      await new Promise(res => setTimeout(res, loadingDelay));
+      if (!active) return;
       if (currentCount === maxTilesCount) {
         setLoadingTiles([]);
         return;
@@ -26,16 +28,22 @@ export default function ConnectionLoading() {
       setLoadingTiles([ ...loadingTiles, tile ]);
     };
 
-    loadTile();
+    let active = true;
+    const timer = setTimeout(() => active && loadTile(), 0);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [loadingTiles]);
 
   return (
     <div className={loadingScreen}>
-      <h1 className={laodingTitle}>Waiting for players...</h1>
+      <h1 className={laodingTitle}>{title}</h1>
+      {hint && <p className={styles.loadingHint}>{hint}</p>}
 
       <div className={tilesLoadContaner}>
         {loadingTiles.map(t => (
-          <img key={t.right} className={loadingTile} src={getTileImagePath(t)} />
+          <img key={t.right} className={loadingTile} src={getTileImagePath(t)} alt="" />
         ))}
       </div>
     </div>

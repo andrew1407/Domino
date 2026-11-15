@@ -1,6 +1,6 @@
-import { DynamicModule, Module } from '@nestjs/common';
-import { REDIS_CLIENT, STORAGE_CLIENT } from './storage.options';
-import StorageService from './storage.service';
+import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { REDIS_CLIENT, STORAGE_CLIENT } from './storage.options.js';
+import StorageService from './storage.service.js';
 
 type RedisOptions = {
   useFactory: (...args: unknown[]) => unknown;
@@ -23,7 +23,7 @@ export default class StorageModule {
           }
         } : {
           useValue: StorageService.client(),
-        }),
+        }) as Provider,
         { provide: STORAGE_CLIENT, useClass: StorageService },
       ],
       exports: [{ provide: STORAGE_CLIENT, useClass: StorageService }],

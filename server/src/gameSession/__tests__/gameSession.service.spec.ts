@@ -1,24 +1,23 @@
 import { createClient, RedisClientType } from 'redis';
-import * as dotenv from 'dotenv';
-import StorageService from '../storage/storage.service';
-import StorageClient from '../storage/StorageClient';
-import ScoreKeeper from '../playMode/ScoreKeeper';
-import ScoreKeeperService from '../scoreKeeper.service';
-import PlayMode, { PlayersDecks } from '../playMode/PlayMode';
-import ClassicDominoService from '../classicDomino.service';
-import GameSessionService from '../gameSession.service';
-import GameSessionError from '../wsTools/GameSessionError';
-import { PlayerRes, DecksInfoRes, MoveRes, RoundRes } from '../wsTools/responseTypes';
-import { availablePlayers, PlayerName } from '../entities/Player';
-import DominoTile, { EndValue, TilesDeck } from '../entities/DominoTile';
+import '../../envConfig.js';
+import StorageService from '../storage/storage.service.js';
+import StorageClient from '../storage/StorageClient.js';
+import ScoreKeeper from '../playMode/ScoreKeeper.js';
+import ScoreKeeperService from '../scoreKeeper.service.js';
+import PlayMode, { PlayersDecks } from '../playMode/PlayMode.js';
+import ClassicDominoService from '../classicDomino.service.js';
+import GameSessionService from '../gameSession.service.js';
+import GameSessionError from '../wsTools/GameSessionError.js';
+import { PlayerRes, DecksInfoRes, MoveRes, RoundRes } from '../wsTools/responseTypes.js';
+import { availablePlayers, PlayerName } from '../entities/Player.js';
+import DominoTile, { EndValue, TilesDeck } from '../entities/DominoTile.js';
 
-dotenv.config();
 
 describe('game session service class', (): void => {
   const dbClient = createClient({
     url: process.env.REDIS_URL ?? 'redis://localhost:6379',
   });
-  beforeAll(async (): Promise<void> => dbClient.connect());
+  beforeAll(async (): Promise<void> => { await dbClient.connect(); });
   afterAll(async (): Promise<void> => {
     const entries: string[] = await dbClient.KEYS('domino:*');
     await Promise.all(
@@ -56,6 +55,24 @@ describe('game session service class', (): void => {
           .toEqual(GameSessionError.badRequest());
       }
     );
+
+    it.each([
+      [2, -1],
+      [2, 2],
+      [3, 1.5],
+      [4, 5],
+    ])(
+      'should throw an error when bots count is invalid (players: %s, bots: %s)',
+      async (players: number, bots: number): Promise<void> => {
+        await expect(gameSession.makeNewSession(players, 100, bots)).rejects
+          .toEqual(GameSessionError.badRequest());
+      }
+    );
+
+    it('should allow up to (players - 1) bots', async (): Promise<void> => {
+      const id: string = await gameSession.makeNewSession(4, 50, 3);
+      expect(typeof id).toEqual('string');
+    });
 
     it('should generate a session id', async (): Promise<void> => {
       const id: string = await gameSession.makeNewSession(3, 50);

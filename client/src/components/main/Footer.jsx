@@ -1,22 +1,22 @@
-import { footer, refText, title, version } from '../../styles/main/Footer.module.scss';
+import styles from '../../styles/main/Footer.module.scss';
 
 export default function Footer() {
   return (
-    <footer className={footer}>
-      <p className={version}>
+    <footer className={styles.footer}>
+      <p className={styles.version}>
         <small>
-          <b>version: 0.2.0</b>
+          <b>version: 0.3.0</b>
         </small>
       </p>
 
-      <p className={title}>
+      <p className={styles.title}>
         <b>DichES</b>
       </p>
 
       <p>
         <b>
           <small>
-            <a className={refText} href="https://github.com/Andrew1407/Domino" target="_blank">git repo</a>
+            <a className={styles.refText} href="https://github.com/Andrew1407/Domino" target="_blank" rel="noreferrer">git repo</a>
           </small>
         </b>
       </p>

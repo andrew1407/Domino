@@ -1,18 +1,52 @@
-@import "../tools.scss";
+@use "../tools" as *;
 
 .header {
   @include flex-display(row, space-between);
-  @include block-decoration($cream-dark-theme, bottom, $brown-theme, 5px);
   align-items: center;
-  padding: 0.75%;
+  gap: 16px;
+  padding: 8px 20px;
+  background: linear-gradient(180deg, #d6b56b, $cream-dark-theme);
+  border-bottom: 3px solid $brown-theme;
+  box-shadow: 0 2px 10px rgba(90, 45, 0, 0.2);
+  position: relative;
+  z-index: 2;
 }
 
 .title {
-  font-family: "Orbitron";
-  font-size: 170%;
-  margin-left: 1%;
+  font-family: "Orbitron", sans-serif;
+
+  a {
+    color: #1a1208;
+    text-decoration: none;
+  }
 
   h1 {
     margin: 0;
+    font-size: 210%;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 0 rgba(255, 253, 208, 0.6);
+  }
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .title h1 {
+    font-size: 160%;
+  }
+}
+
+@media (max-height: 520px) and (min-width: 600px) {
+  .header {
+    flex-wrap: nowrap;
+    padding: 4px 12px;
+  }
+
+  .title h1 {
+    font-size: 130%;
   }
 }

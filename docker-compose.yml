@@ -1,21 +1,35 @@
-version: "3"
 services:
   server:
     build: ./server
+    environment:
+      PORT: ${SERVER_HTTP_PORT}
+      WS_PORT: ${SERVER_WS_PORT}
+      HOST: 0.0.0.0
+      BOT_MOVE_DELAY: 800
+      REDIS_URL: redis://default:${REDIS_PASSWD}@redis:6379
     depends_on:
-      - "redis"
+      redis:
+        condition: service_healthy
     ports:
       - "${SERVER_HTTP_PORT}:${SERVER_HTTP_PORT}"
       - "${SERVER_WS_PORT}:${SERVER_WS_PORT}"
 
   client:
-    build: ./client
+    build:
+      context: ./client
+      args:
+        NEXT_PUBLIC_SERVER_ADDR: localhost:${SERVER_HTTP_PORT}
+        NEXT_PUBLIC_WS_ADDR: localhost:${SERVER_WS_PORT}
+    environment:
+      PORT: ${CLIENT_PORT}
     ports:
       - "${CLIENT_PORT}:${CLIENT_PORT}"
-      
+
   redis:
-    container_name: redis
     image: redis:alpine
     command: redis-server --requirepass ${REDIS_PASSWD}
-    ports:
-      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWD}", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

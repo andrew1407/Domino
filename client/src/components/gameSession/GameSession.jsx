@@ -5,12 +5,13 @@ import LogTitle from './historyLog/LogTitle';
 import HistoryLog from './historyLog/HistoryLog';
 import DominoBoard from './dominoBoard/DominoBoard';
 import PlayerDeck from './playerDeck/PlayerDeck';
-import { sessionEntriesBlock } from '../../styles/gameSession/GameSession.module.scss';
+import styles from '../../styles/gameSession/GameSession.module.scss';
+
 
 export default function GameSession() {
   return (
     <MainWrapper HeaderInfo={HeaderInfoBar}>
-      <div className={sessionEntriesBlock}>
+      <div className={styles.sessionEntriesBlock}>
         <PlayersList />
         <LogTitle />
         <HistoryLog />

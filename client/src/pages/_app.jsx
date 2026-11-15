@@ -1,14 +1,25 @@
+import Head from 'next/head';
+import { Nunito } from 'next/font/google';
 import { Provider } from 'react-redux';
-import { createWrapper } from 'next-redux-wrapper';
 import storage from '../storage';
+import { assetPath } from '../tools';
 import '../styles/styles.scss';
 
-const App = ({ Component, pageProps }) => (
-  <Provider store={storage}>
-    <Component { ...pageProps } />
-  </Provider>
-);
+const nunito = Nunito({ subsets: ['latin', 'cyrillic'], display: 'swap' });
 
-const storageWrapper = createWrapper(() => storage);
-
-export default storageWrapper.withRedux(App);
+export default function App({ Component, pageProps }) {
+  return (
+    <Provider store={storage}>
+      <Head>
+        <title>Domino</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href={assetPath('/static/tiles/6-6.svg')} />
+        <meta name="description" content="Classic domino for 2-4 players: online sessions and games with bots" />
+      </Head>
+      <style jsx global>{`
+        :root { --font-body: ${nunito.style.fontFamily}; }
+      `}</style>
+      <Component {...pageProps} />
+    </Provider>
+  );
+}

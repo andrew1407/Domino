@@ -1,33 +1,42 @@
-@import "./modal.scss";
-@import "../tools.scss";
+@use "./modal" as *;
+@use "../tools" as *;
 
 .modalBackground {
   @include modal-bkg;
+  @include flex-display(column, center);
+  align-items: center;
 }
 
 .modalComponent {
-  @include modal-size(25%, 30%, 40%, 35%);
-  @include block-decoration($green-light-theme, all, $brown-theme, 6px);
-  @include flex-display(column, space-between);
+  @include panel($cream-mid-theme);
+  @include flex-display(column, none);
+  align-items: center;
+  gap: 8px;
+  width: min(460px, calc(100vw - 32px));
+  padding: 20px 24px;
   text-align: center;
-  overflow-y: hidden;
+  box-shadow: $shadow-strong;
+  animation: pop 0.18s ease-out;
 }
 
 .messageTitle {
-  font-size: 220%;
-  margin-bottom: 10%;
-  color: rgb(104, 15, 33);
+  margin: 0;
+  font-size: 140%;
+  color: $brown-dark-theme;
 }
 
 .messageText {
-  font-size: 140%;
+  font-size: 108%;
+  line-height: 1.45;
+  word-break: break-word;
 }
 
 .modalButton {
-  @include block-decoration($cream-theme, all, $cream-dark-theme, 4px);
-  width: 23%;
-  margin: 0 auto 2%;
-  padding: 0.75%;
-  font-size: 140%;
-  font-style: italic;
+  @include button;
+  font-size: 105%;
+}
+
+@keyframes pop {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }

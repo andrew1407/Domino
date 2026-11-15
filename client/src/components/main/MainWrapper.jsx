@@ -1,6 +1,7 @@
 import Footer from './Footer';
 import Header from './Header';
-import { centralBlock, mainBlock } from '../../styles/main/MainWrapper.module.scss';
+import styles from '../../styles/main/MainWrapper.module.scss';
+const { centralBlock, mainBlock } = styles;
 
 export default function MainWrapper({ HeaderInfo, children }) {
   return (

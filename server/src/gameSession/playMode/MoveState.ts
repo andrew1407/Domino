@@ -1,4 +1,4 @@
-const enum MoveState {
+enum MoveState {
   AVAILABLE,
   SKIPPABLE,
   DEAD_END,

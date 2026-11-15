@@ -1,10 +1,10 @@
 import { RedisClientType } from 'redis';
-import { MoveOption, PlayersDecks } from 'src/gameSession/playMode/PlayMode';
-import { PlayersScore } from 'src/gameSession/playMode/ScoreKeeper';
-import DominoTile, { TilesDeck } from '../../entities/DominoTile';
-import { PlayerName } from '../../entities/Player';
-import StorageService from '../storage.service';
-import StorageClient, { SessionData } from '../StorageClient';
+import { MoveOption, PlayersDecks } from '../../playMode/PlayMode.js';
+import { PlayersScore } from '../../playMode/ScoreKeeper.js';
+import DominoTile, { TilesDeck } from '../../entities/DominoTile.js';
+import { PlayerName } from '../../entities/Player.js';
+import StorageService from '../storage.service.js';
+import StorageClient, { SessionData } from '../StorageClient.js';
 
 type FakeStorage = Record<string, unknown>;
 

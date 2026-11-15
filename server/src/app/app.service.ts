@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import commands from './commands.json';
+import commands from './commands.json' with { type: 'json' };
 
 @Injectable()
 export default class AppService {

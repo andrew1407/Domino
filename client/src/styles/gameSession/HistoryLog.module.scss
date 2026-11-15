@@ -1,35 +1,51 @@
-@import "../tools.scss";
-
-.logContainer {
-  @include block-decoration(rgb(248, 172, 85), left, $brown-theme, 4px);
-  @include scrollbar(vertical, 9px, $brown-theme, 10px);
-  grid-column: 5 / -1;
-  grid-row: 2 / -1;
-  overflow-y: scroll;
-  padding: 0.5% 2%;
-}
+@use "../tools" as *;
 
 .logHeader {
-  @include block-decoration(rgb(206, 146, 77), bottom, $brown-theme, 4px);
-  border-left: $brown-theme solid 4px;
-  display: table;
-  grid-column: 5 / -1;
-  grid-row: 1 / 2;
-  text-align: center;
-  font-size: 90%;
+  grid-area: logTitle;
+  @include panel($wood-theme);
+  @include flex-display(row, center);
+  align-items: center;
+  padding: 8px;
 
   h1 {
     margin: 0;
-    display: table-cell;
-    vertical-align: middle;
+    font-size: 110%;
+    color: #2c1a05;
   }
 }
 
+.logContainer {
+  grid-area: log;
+  @include panel($orange-theme);
+  @include scrollbar(vertical, 8px, $brown-theme, 10px);
+  overflow-y: auto;
+  padding: 6px 12px;
+}
+
+.logInner {
+  position: relative;
+  width: 100%;
+}
+
 .logMessage {
-  font-size: 115%;
-  font-style: italic;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  font-size: 95%;
+  line-height: 1.4;
   margin: 0;
-  margin-top: 5%;
-  padding-bottom: 3%;
-  border-bottom: $brown-theme solid 2px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(155, 72, 5, 0.35);
+}
+
+.lastMessage {
+  font-weight: 700;
+  border-bottom: none;
+}
+
+@media (max-width: 1024px) {
+  .logMessage {
+    font-size: 88%;
+  }
 }

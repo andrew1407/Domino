@@ -1,12 +1,7 @@
-FROM node:16
-
+FROM node:26-alpine
 WORKDIR /app/server
-
+COPY package*.json ./
+RUN npm ci
 COPY . .
-
-RUN cp .env.example .env && \
-  npm install -g @nestjs/cli && \
-  npm i && \
-  npm run build
-
+RUN cp .env.example .env && npm run build
 CMD [ "npm", "test" ]

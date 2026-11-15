@@ -1,21 +1,36 @@
-@import "./tools.scss";
+@use "./tools" as *;
 
 .listContainer {
   @include flex-display(column, none);
-  margin: 0 0 2% 1.5%;
+  margin-top: 12px;
+  gap: 6px;
+
+  h2 {
+    font-size: 110%;
+    margin: 8px 0 4px;
+    color: $brown-dark-theme;
+  }
 }
 
 .elementsContainer {
   @include flex-display(column, none);
+  gap: 4px;
 }
 
 .description {
-  margin: 0.5% 0 0.5% 1.5%;
+  padding: 6px 10px;
+  border-radius: $radius-sm;
+  background: rgba(255, 253, 208, 0.55);
+  line-height: 1.45;
+
   b {
-    font-size: 110%;
+    font-family: ui-monospace, monospace;
+    font-size: 92%;
+    color: $brown-dark-theme;
   }
 }
 
 .subheader {
-  margin-left: 0.75%;
+  font-size: 100%;
+  margin: 8px 0 4px;
 }
