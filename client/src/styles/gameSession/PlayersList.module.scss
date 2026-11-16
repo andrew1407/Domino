@@ -25,16 +25,11 @@
   background-color: $green-theme;
   border-color: $green-dark-theme;
   color: #fff;
-  transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(74, 128, 38, 0.45);
 
   .botTag {
     border-color: #fff;
   }
-}
-
-.turnMarker {
-  font-size: 80%;
 }
 
 .botTag {
@@ -119,10 +114,18 @@
 
 
 @media (max-width: 520px) {
+  // name always above the stats, so the block height doesn't depend on
+  // whether the name happens to fit beside them (no jumping between turns)
   .playerBlock {
+    flex-direction: column;
+    flex-wrap: nowrap;
     font-size: 88%;
-    gap: 6px;
+    gap: 2px;
     padding: 6px;
+  }
+
+  .nameBlock {
+    max-width: 100%;
   }
 
   .botTag {

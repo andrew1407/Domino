@@ -22,7 +22,8 @@ describe('PlayerInfo labels', () => {
     const { getByTestId } = render(<PlayerInfo name="Bobo" score={3} tiles={2} bot active />);
     const playerInfo = getByTestId('player-info');
     expect(playerInfo).toHaveTextContent('bot');
-    expect(playerInfo).toHaveTextContent('▶');
+    expect(playerInfo).not.toHaveTextContent('▶');
+    expect(playerInfo).toHaveAttribute('title', 'Bobo – bot: makes a move');
     expect(playerInfo).not.toHaveTextContent('(you)');
   });
 });

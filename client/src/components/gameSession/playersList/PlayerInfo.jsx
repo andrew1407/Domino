@@ -9,7 +9,6 @@ export default function PlayerInfo({ name, score, tiles, you, bot, active }) {
       title={`${name}${you ? ' (you)' : ''}${bot ? ' – bot' : ''}${active ? ': makes a move' : ''}`}
     >
       <div className={styles.nameBlock}>
-        {active && <span className={styles.turnMarker}>▶</span>}
         <span className={applyStyles(styles.nameInfo, you && styles.setPlayer)}>{name}</span>
         {you && <small className={styles.youTag}>(you)</small>}
         {bot && <small className={styles.botTag}>bot</small>}
