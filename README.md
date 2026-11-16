@@ -50,10 +50,6 @@ Direct mode, no server: the host (left) sends an invite link, the guest (right) 
 - server selection: the client talks to the local server API (`localhost:8080` / `localhost:8081`) by default,
   and any other server can be set in the UI (*Server* tab or the home page).
 
-## Requirements
-
-Node.js 26+, Redis (or Docker).
-
 ## Run with Docker
 
 ```bash
