@@ -70,6 +70,9 @@ describe('local (in-browser) server', () => {
     expect(last.endGame).toBe(true);
     expect(last.scores[last.winner]).toBeGreaterThanOrEqual(30);
     expect(events.some(e => e.event === 'moveAction')).toBe(true);
+    // against bots only, the human sits first
+    const roundStart = events.find(e => e.event === 'roundStart').data;
+    expect(Object.keys(roundStart.tilesCount)[0]).toBe(me);
   });
 
   it('rejects a move out of turn', async () => {

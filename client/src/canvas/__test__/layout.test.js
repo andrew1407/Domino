@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { layoutChain, TILE, GHOST_ROOM } from '../layout';
+import { layoutChain, TILE, GHOST_ROOM, HALF_ROW } from '../layout';
 
 // builds a valid chain of n tiles where each tile.left matches the previous tile.right
 const makeChain = (n, start = 6) => {
@@ -27,11 +27,19 @@ const overlap = (a, b) => {
   return dx > 0.5 && dy > 0.5;
 };
 
+// pairwise check: a chain has at most 28 tiles (378 pairs), so it stays cheap
+const expectNoOverlaps = tiles => {
+  const overlapping = [];
+  tiles.forEach((a, i) => tiles.slice(i + 1).forEach(b => {
+    if (overlap(a, b)) overlapping.push([a.key, b.key]);
+  }));
+  expect(overlapping).toEqual([]);
+};
+
 describe('snake layout', () => {
   const deck = makeChain(24);
   const firstIdx = 10;
-  const halfRow = 500;
-  const { tiles, bounds } = layoutChain({ deck, firstTile: deck[firstIdx], halfRow });
+  const { tiles, bounds } = layoutChain({ deck, firstTile: deck[firstIdx] });
 
   it('places every tile', () => {
     expect(tiles).toHaveLength(deck.length);
@@ -39,23 +47,45 @@ describe('snake layout', () => {
   });
 
   it.each([0, 3, 7, 10, 15, 22])('never overlaps tiles (first tile index %s, various widths)', firstIdx => {
-    for (const halfRow of [300, 420, 500, 700, 950]) {
-      const { tiles } = layoutChain({ deck, firstTile: deck[firstIdx], halfRow });
-      for (let i = 0; i < tiles.length; ++i)
-        for (let j = i + 1; j < tiles.length; ++j)
-          expect(overlap(tiles[i], tiles[j])).toBe(false);
-    }
+    const { tiles } = layoutChain({ deck, firstTile: deck[firstIdx] });
+    expectNoOverlaps(tiles);
   });
 
   it('never overlaps tiles', () => {
-    for (let i = 0; i < tiles.length; ++i)
-      for (let j = i + 1; j < tiles.length; ++j)
-        expect(overlap(tiles[i], tiles[j])).toBe(false);
+    expectNoOverlaps(tiles);
   });
 
-  it('keeps rows within the board width', () => {
-    expect(bounds.maxX).toBeLessThanOrEqual(halfRow + TILE.long + 2 * TILE.short + 10);
-    expect(bounds.minX).toBeGreaterThanOrEqual(-halfRow - TILE.long - 2 * TILE.short - 10);
+  it('keeps rows within 9 tiles (plus the corner tiles)', () => {
+    expect(HALF_ROW).toBe(TILE.long / 2 + 2 + 4 * (TILE.long + 2));
+    expect(bounds.maxX).toBeLessThanOrEqual(HALF_ROW + TILE.short + 2);
+    expect(bounds.minX).toBeGreaterThanOrEqual(-HALF_ROW - TILE.short - 2);
+  });
+
+  it('puts at most 4 tiles on each side of the first one before turning', () => {
+    // corner tiles are shifted off the row line, doubles stand on it
+    const firstRow = tiles.filter(t => t.y === 0);
+    expect(firstRow.filter(t => t.x > 0)).toHaveLength(4);
+    expect(firstRow.filter(t => t.x < 0)).toHaveLength(4);
+  });
+
+  it('turns at the row limit even with a double there', () => {
+    // 4 tiles to the right of the first one, then a double: it turns the corner
+    const deck = [{ left: 6, right: 0 }, { left: 0, right: 1 }, { left: 1, right: 2 },
+      { left: 2, right: 3 }, { left: 3, right: 4 }, { left: 4, right: 4 }, { left: 4, right: 5 }];
+    const { tiles: placed } = layoutChain({ deck, firstTile: deck[0] });
+    expect(placed.filter(t => t.y === 0 && t.x > 0)).toHaveLength(4);
+    const double = placed.find(t => t.key === layoutChain({ deck: [deck[5]], firstTile: deck[5] }).tiles[0].key);
+    expect(double.y).toBeLessThan(0);
+    expect(double.rotation).toBe(0);
+    expectNoOverlaps(placed);
+  });
+
+  it('lays 9 tiles in the rows after a corner', () => {
+    const long = makeChain(27);
+    const { tiles: placed } = layoutChain({ deck: long, firstTile: long[0] });
+    // the second row of the right branch: horizontal tiles above the first row
+    const rowY = -(TILE.long + 2);
+    expect(placed.filter(t => t.y === rowY)).toHaveLength(9);
   });
 
   it('turns the right branch up and the left branch down', () => {
@@ -85,7 +115,7 @@ describe('snake layout', () => {
 
   it('adds ghost areas for the picked tile at both ends', () => {
     const picked = { left: deck[0].left, right: 0 };
-    const res = layoutChain({ deck, firstTile: deck[firstIdx], pickedTile: picked, halfRow });
+    const res = layoutChain({ deck, firstTile: deck[firstIdx], pickedTile: picked });
     expect(res.ghosts.left).toBeDefined();
     expect(res.ghosts.right).toBeDefined();
     for (const t of res.tiles) {
@@ -95,7 +125,7 @@ describe('snake layout', () => {
   });
 
   it('returns nothing without the first tile', () => {
-    expect(layoutChain({ deck, firstTile: null, halfRow }).tiles).toHaveLength(0);
+    expect(layoutChain({ deck, firstTile: null }).tiles).toHaveLength(0);
   });
 });
 
@@ -107,20 +137,18 @@ describe('ghost areas of a picked tile', () => {
 
   it.each([1, 5, 12, 20, 27])('stay within one tile around a chain of %s tiles', n => {
     const deck = makeChain(n);
-    for (const halfRow of [250, 400, 700]) {
-      for (let firstIdx = 0; firstIdx < deck.length; ++firstIdx) {
-        for (const pickedTile of [{ left: 3, right: 4 }, { left: 5, right: 5 }]) {
-          const { ghosts, tileBounds } = layoutChain({ deck, firstTile: deck[firstIdx], pickedTile, halfRow });
-          expect(inside(ghosts.left, tileBounds)).toBe(true);
-          expect(inside(ghosts.right, tileBounds)).toBe(true);
-        }
+    for (let firstIdx = 0; firstIdx < deck.length; ++firstIdx) {
+      for (const pickedTile of [{ left: 3, right: 4 }, { left: 5, right: 5 }]) {
+        const { ghosts, tileBounds } = layoutChain({ deck, firstTile: deck[firstIdx], pickedTile });
+        expect(inside(ghosts.left, tileBounds)).toBe(true);
+        expect(inside(ghosts.right, tileBounds)).toBe(true);
       }
     }
   });
 
   it('do not change the placed tiles or their bounds', () => {
     const deck = makeChain(15);
-    const args = { deck, firstTile: deck[6], halfRow: 400 };
+    const args = { deck, firstTile: deck[6] };
     const plain = layoutChain(args);
     const picked = layoutChain({ ...args, pickedTile: { left: 2, right: 6 } });
     expect(picked.tiles).toEqual(plain.tiles);
@@ -157,13 +185,11 @@ describe('stable placement', () => {
   it.each([['simple', makeChain(26)], ['with doubles', doublesChain()]])(
     'adding a tile never moves the placed ones (%s chain)',
     (_, deck) => {
-      for (const halfRow of [250, 330, 520]) {
-        // the chain grows to the right from the first tile
-        for (let n = 2; n <= deck.length; ++n) {
-          const before = byKey(layoutChain({ deck: deck.slice(0, n - 1), firstTile: deck[0], halfRow }).tiles);
-          const after = layoutChain({ deck: deck.slice(0, n), firstTile: deck[0], halfRow }).tiles;
-          for (const t of after) if (before[t.key]) expect(t).toEqual(before[t.key]);
-        }
+      // the chain grows to the right from the first tile
+      for (let n = 2; n <= deck.length; ++n) {
+        const before = byKey(layoutChain({ deck: deck.slice(0, n - 1), firstTile: deck[0] }).tiles);
+        const after = layoutChain({ deck: deck.slice(0, n), firstTile: deck[0] }).tiles;
+        for (const t of after) if (before[t.key]) expect(t).toEqual(before[t.key]);
       }
     },
   );
@@ -171,27 +197,21 @@ describe('stable placement', () => {
   it.each([['simple', makeChain(26)], ['with doubles', doublesChain()]])(
     'a ghost area shows exactly where the tile is placed (%s chain)',
     (_, deck) => {
-      for (const halfRow of [250, 330, 520]) {
-        for (let n = 1; n < deck.length; ++n) {
-          const tile = deck[n];
-          const { ghosts } = layoutChain({ deck: deck.slice(0, n), firstTile: deck[0], pickedTile: tile, halfRow });
-          const placed = byKey(layoutChain({ deck: deck.slice(0, n + 1), firstTile: deck[0], halfRow }).tiles);
-          const actual = placed[ghosts.right.key];
-          expect({ x: ghosts.right.x, y: ghosts.right.y, w: ghosts.right.w, h: ghosts.right.h })
-            .toEqual({ x: actual.x, y: actual.y, w: actual.w, h: actual.h });
-        }
+      for (let n = 1; n < deck.length; ++n) {
+        const tile = deck[n];
+        const { ghosts } = layoutChain({ deck: deck.slice(0, n), firstTile: deck[0], pickedTile: tile });
+        const placed = byKey(layoutChain({ deck: deck.slice(0, n + 1), firstTile: deck[0] }).tiles);
+        const actual = placed[ghosts.right.key];
+        expect({ x: ghosts.right.x, y: ghosts.right.y, w: ghosts.right.w, h: ghosts.right.h })
+          .toEqual({ x: actual.x, y: actual.y, w: actual.w, h: actual.h });
       }
     },
   );
 
   it('does not overlap a double placed right after a corner', () => {
     const deck = doublesChain();
-    for (const halfRow of [250, 330, 400, 520]) {
-      const { tiles } = layoutChain({ deck, firstTile: deck[0], halfRow });
-      for (let i = 0; i < tiles.length; ++i)
-        for (let j = i + 1; j < tiles.length; ++j)
-          expect(overlap(tiles[i], tiles[j])).toBe(false);
-    }
+    const { tiles } = layoutChain({ deck, firstTile: deck[0] });
+    expectNoOverlaps(tiles);
   });
 });
 

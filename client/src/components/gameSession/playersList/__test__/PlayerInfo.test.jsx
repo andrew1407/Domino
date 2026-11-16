@@ -24,6 +24,6 @@ describe('PlayerInfo labels', () => {
     expect(playerInfo).toHaveTextContent('bot');
     expect(playerInfo).not.toHaveTextContent('▶');
     expect(playerInfo).toHaveAttribute('title', 'Bobo – bot: makes a move');
-    expect(playerInfo).not.toHaveTextContent('(you)');
+    expect(playerInfo).not.toHaveTextContent('you');
   });
 });

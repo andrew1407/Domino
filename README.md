@@ -25,7 +25,7 @@ A game against three bots: creating the session, picking tiles, the drop targets
   <img src="./docs/demo/game-desktop.gif" alt="A game against three bots on a desktop screen" width="100%">
 </p>
 
-On a phone: the chain wraps to the narrow board, pinch to zoom.
+On a phone: the chain keeps the same layout as on a desktop (4 tiles on each side of the first one, then rows of 9), the board zooms to fit it, pinch to zoom.
 
 <p align="center">
   <img src="./docs/demo/game-mobile.gif" alt="A game on a phone screen with pinch zoom" width="300">

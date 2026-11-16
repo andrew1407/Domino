@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { getCommonDeck, getCurentPlayer, getFirstTile, getPickedTile, getRoundInfo, getSessionEmitter } from '../../../storage/selectors';
-import { layoutChain, insideRect, TILE, GHOST_ROOM } from '../../../canvas/layout';
+import { layoutChain, insideRect, GHOST_ROOM } from '../../../canvas/layout';
 import { drawBoard } from '../../../canvas/render';
 import { canPlaceTile } from '../../../tools';
 import styles from '../../../styles/gameSession/DominoBoard.module.scss';
@@ -89,14 +89,12 @@ export default function TilesTable() {
 
   const layout = useMemo(() => {
     if (!size.width || !deck.length) return { tiles: [], ghosts: {}, bounds: null };
-    const halfRow = size.width / (2 * baseScale) - TILE.short - MARGIN;
     return layoutChain({
       deck,
       firstTile,
       pickedTile: myMove ? pickedTile : null,
-      halfRow,
     });
-  }, [deck, firstTile, pickedTile, myMove, size.width, baseScale]);
+  }, [deck, firstTile, pickedTile, myMove, size.width]);
 
   const base = useMemo(() => baseView(layout, size, baseScale), [layout, size, baseScale]);
   const view = useMemo(() => makeView(base, size, camera.zoom, camera.pan), [base, size, camera]);

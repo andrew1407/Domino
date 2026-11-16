@@ -42,12 +42,25 @@
   color: #5a3d12;
 }
 
+// all 7 tiles always fit one line: a tile is 1/7 of the row, at most 64px wide
 .tilesLoadContaner {
+  --tiles-gap: 6px;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: var(--tiles-gap);
+  width: 100%;
+  max-width: calc(7 * 64px + 6 * var(--tiles-gap));
   min-height: 130px;
+  padding: 0 8px;
+  box-sizing: border-box;
 }
 
 .loadingTile {
-  padding: 0.5%;
+  flex: 0 0 auto;
+  width: calc((100% - 6 * var(--tiles-gap)) / 7);
+  height: auto;
+  aspect-ratio: 64 / 122;
   filter: drop-shadow(2px 3px 3px rgba(60, 30, 0, 0.3));
 }
 
@@ -109,11 +122,9 @@
     padding: 0 16px;
   }
 
-  .loadingTile {
-    height: 70px;
-  }
-
   .tilesLoadContaner {
+    --tiles-gap: 4px;
+    max-width: calc(7 * 40px + 6 * var(--tiles-gap));
     min-height: 80px;
   }
 }

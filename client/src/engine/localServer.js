@@ -242,6 +242,9 @@ export class LocalServer {
     this.#send(socket, 'joinSession', { ...joined, scores: { ...s.scores } });
     if (!s.freeNames.length) {
       s.started = true;
+      // against bots only, the human takes the first seat; with several
+      // humans the seats keep the actual join order
+      if (s.humans.length === 1) s.order = [name, ...s.order.filter(p => p !== name)];
       this.#run(s, this.#startRound(s));
     }
   }

@@ -10,7 +10,7 @@ export default function PlayerInfo({ name, score, tiles, you, bot, active }) {
     >
       <div className={styles.nameBlock}>
         <span className={applyStyles(styles.nameInfo, you && styles.setPlayer)}>{name}</span>
-        {you && <small className={styles.youTag}>(you)</small>}
+        {you && <small className={styles.youTag}>you</small>}
         {bot && <small className={styles.botTag}>bot</small>}
       </div>
       <div className={styles.statsBlock}>

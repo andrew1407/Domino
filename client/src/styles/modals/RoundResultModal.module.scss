@@ -76,6 +76,30 @@
   font-size: 108%;
 }
 
+.nextRound {
+  width: 100%;
+  margin-top: 14px;
+
+  p {
+    margin: 0 0 8px;
+    font-size: 95%;
+    font-style: italic;
+  }
+}
+
+.progress {
+  height: 4px;
+  border-radius: 2px;
+  background-color: $green-theme;
+  transform-origin: left;
+  animation: countdown linear forwards;
+}
+
+@keyframes countdown {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 @keyframes pop {
   from { transform: scale(0.94); opacity: 0; }
   to { transform: scale(1); opacity: 1; }

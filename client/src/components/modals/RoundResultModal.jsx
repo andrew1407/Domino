@@ -4,6 +4,8 @@ import { useSelector } from 'react-redux';
 import { getCurentPlayer, getSessionStatus } from '../../storage/selectors';
 import styles from '../../styles/modals/RoundResultModal.module.scss';
 
+const ROUND_RESULT_TIME = 2500;
+
 export default function RoundResultModal() {
   const { lastRound, finished, interrupted, unavailable, connectionClosed, bots } = useSelector(getSessionStatus);
   const you = useSelector(getCurentPlayer);
@@ -12,7 +14,7 @@ export default function RoundResultModal() {
   // round results close automatically (a new round starts in a couple of seconds)
   useEffect(() => {
     if (!lastRound || lastRound.endGame) return;
-    const timer = setTimeout(() => setDismissed(lastRound), 2500);
+    const timer = setTimeout(() => setDismissed(lastRound), ROUND_RESULT_TIME);
     return () => clearTimeout(timer);
   }, [lastRound]);
 
@@ -56,12 +58,17 @@ export default function RoundResultModal() {
             ))}
           </tbody>
         </table>
-        <div className={styles.actions}>
-          {endGame ?
-            <Link className={styles.btn} href="/game-session">new game</Link> :
-            <button className={styles.btn} onClick={() => setDismissed(lastRound)}>continue</button>
-          }
-        </div>
+        {endGame ? (
+          <div className={styles.actions}>
+            <Link className={styles.btn} href="/game-session">new game</Link>
+          </div>
+        ) : (
+          // the next round starts by itself, so there's nothing to click
+          <div className={styles.nextRound}>
+            <p>Next round is starting…</p>
+            <div className={styles.progress} style={{ animationDuration: `${ROUND_RESULT_TIME}ms` }} />
+          </div>
+        )}
       </div>
     </div>
   );

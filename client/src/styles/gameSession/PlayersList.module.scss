@@ -27,12 +27,13 @@
   color: #fff;
   box-shadow: 0 4px 14px rgba(74, 128, 38, 0.45);
 
-  .botTag {
+  .botTag, .youTag {
     border-color: #fff;
   }
 }
 
-.botTag {
+// "you" and "bot" labels share one look and size
+.botTag, .youTag {
   font-size: 68%;
   font-weight: 700;
   padding: 1px 6px;
@@ -65,11 +66,6 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-}
-
-.youTag {
-  flex-shrink: 0;
-  font-size: 75%;
 }
 
 .nameInfo {
@@ -128,7 +124,7 @@
     max-width: 100%;
   }
 
-  .botTag {
+  .botTag, .youTag {
     margin-left: 3px;
     padding: 0 4px;
   }

@@ -1,10 +1,13 @@
 // Snake ("serpentine") layout of the domino chain.
 //
 // The first tile is placed at the origin. The right branch goes right along the
-// first row, turns up at the row limit and continues to the left along the next
+// first row (at most 4 tiles), turns up and continues to the left along the next
 // row (and so on, zigzagging upwards). The left branch mirrors it: it goes left,
-// turns down and zigzags downwards. Doubles are placed across the line, except
-// right after a corner, where there is no room for that.
+// turns down and zigzags downwards. A row is 9 tiles wide (4 + first + 4) on
+// every device: the row size never depends on the screen, the view is zoomed
+// to fit the chain instead. Doubles are placed across the line, except right
+// after a corner, where there is no room for that; a double that reaches the
+// row limit turns the corner like any other tile.
 //
 // Coordinates are board units (1 unit = 1px at scale 1), y axis points down.
 
@@ -13,7 +16,11 @@ import { getTileKey } from '../tools';
 export const TILE = Object.freeze({ short: 64, long: 122 });
 const GAP = 2;
 
-const MIN_HALF_ROW = TILE.long * 2.5;
+// tiles of a branch in the first row, and tiles in any other row
+const FIRST_ROW_TILES = 4;
+const ROW_TILES = 2 * FIRST_ROW_TILES + 1;
+// row limit (±HALF_ROW): the first tile and 4 regular tiles on each side
+export const HALF_ROW = TILE.long / 2 + GAP + FIRST_ROW_TILES * (TILE.long + GAP);
 
 // rotation (degrees, clockwise) of the vertical tile image, whose top half
 // shows the bigger value, so that the bigger value points along the vector
@@ -54,9 +61,8 @@ const placeFirst = tile => {
  * @param steps tiles walking away from the first tile: { tile, near, far }
  * @param first placement of the first tile
  * @param dir initial horizontal direction (+1 right branch, -1 left branch)
- * @param halfRow half-width of a row (row limit is ±halfRow)
  */
-const placeBranch = (steps, first, dir, halfRow) => {
+const placeBranch = (steps, first, dir) => {
   const vertical = -dir; // right branch climbs up, left branch goes down
   const placed = [];
   let rowY = 0;
@@ -64,6 +70,8 @@ const placeBranch = (steps, first, dir, halfRow) => {
   let direction = dir;
 
   let afterCorner = false;
+  let rowLimit = FIRST_ROW_TILES;
+  let inRow = 0;
 
   // a tile's placement depends only on the tiles before it: the chain never
   // shifts when a tile is added, and a ghost area shows exactly where the
@@ -73,19 +81,22 @@ const placeBranch = (steps, first, dir, halfRow) => {
     // overlap the corner
     const across = near === far && !afterCorner;
     const width = across ? TILE.short : TILE.long;
-    const overflow = Math.abs(cursor + direction * width) > halfRow;
+    const overflow = inRow >= rowLimit || Math.abs(cursor + direction * width) > HALF_ROW;
     afterCorner = false;
 
-    if (overflow && near !== far) {
-      // a corner: the tile turns the line to the next row
+    if (overflow) {
+      // a corner: the tile turns the line to the next row (a double too, so a
+      // row never gets more tiles than its limit); it stands upright
       const x = cursor + direction * TILE.short / 2;
       const y = rowY + vertical * (TILE.long / 2 - TILE.short / 2);
-      const rotation = orient(near, far, { x: 0, y: -vertical });
+      const rotation = near === far ? 0 : orient(near, far, { x: 0, y: -vertical });
       placed.push(placement(tile, x, y, TILE.short, TILE.long, rotation));
       rowY += vertical * (TILE.long + GAP);
       cursor = x + direction * (TILE.short / 2);
       direction = -direction;
       afterCorner = true;
+      rowLimit = ROW_TILES;
+      inRow = 0;
       return;
     }
 
@@ -97,6 +108,7 @@ const placeBranch = (steps, first, dir, halfRow) => {
       placement(tile, x, rowY, TILE.short, TILE.long, rotation) :
       placement(tile, x, rowY, TILE.long, TILE.short, rotation));
     cursor += direction * (width + GAP);
+    inRow += 1;
   });
 
   return placed;
@@ -123,11 +135,10 @@ const findFirstIdx = (deck, firstTile) => {
  * Computes positions of the common deck tiles and ghost areas for the picked tile.
  * @returns {{ tiles: object[], ghosts: { left?: object, right?: object }, bounds: object }}
  */
-export const layoutChain = ({ deck, firstTile, pickedTile = null, halfRow }) => {
+export const layoutChain = ({ deck, firstTile, pickedTile = null }) => {
   const result = { tiles: [], ghosts: {}, bounds: null, tileBounds: null };
   const firstIdx = findFirstIdx(deck, firstTile);
   if (firstIdx < 0) return result;
-  const limit = Math.max(halfRow, MIN_HALF_ROW);
   const first = placeFirst(deck[firstIdx]);
 
   const rightSteps = deck.slice(firstIdx + 1)
@@ -137,8 +148,8 @@ export const layoutChain = ({ deck, firstTile, pickedTile = null, halfRow }) => 
 
   result.tiles = [
     first,
-    ...placeBranch(rightSteps, first, 1, limit),
-    ...placeBranch(leftSteps, first, -1, limit),
+    ...placeBranch(rightSteps, first, 1),
+    ...placeBranch(leftSteps, first, -1),
   ];
 
   if (pickedTile) {
@@ -150,8 +161,8 @@ export const layoutChain = ({ deck, firstTile, pickedTile = null, halfRow }) => 
       const far = pickedTile.left + pickedTile.right - near;
       return { tile: pickedTile, near, far };
     };
-    const rightGhost = placeBranch([...rightSteps, ghostStep('right')], first, 1, limit).pop();
-    const leftGhost = placeBranch([...leftSteps, ghostStep('left')], first, -1, limit).pop();
+    const rightGhost = placeBranch([...rightSteps, ghostStep('right')], first, 1).pop();
+    const leftGhost = placeBranch([...leftSteps, ghostStep('left')], first, -1).pop();
     result.ghosts = { left: leftGhost, right: rightGhost };
   }
 
