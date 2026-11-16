@@ -12,11 +12,14 @@ export default function GameSession() {
   return (
     <MainWrapper HeaderInfo={HeaderInfoBar}>
       <div className={styles.sessionEntriesBlock}>
-        <PlayersList />
+        {/* players, board & deck: one screen on phones/tablets, log below */}
+        <div className={styles.playArea}>
+          <PlayersList />
+          <DominoBoard />
+          <PlayerDeck />
+        </div>
         <LogTitle />
         <HistoryLog />
-        <DominoBoard />
-        <PlayerDeck />
       </div>
     </MainWrapper>
   );

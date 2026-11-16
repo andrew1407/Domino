@@ -14,6 +14,11 @@
   min-height: 540px;
 }
 
+// on wide screens the wrapper is transparent for the grid
+.playArea {
+  display: contents;
+}
+
 @media (min-width: 1600px) {
   .sessionEntriesBlock {
     grid-template-columns: minmax(0, 1fr) 380px;
@@ -36,22 +41,47 @@
   }
 }
 
-// stacked layout: tablets in portrait & phones
+// stacked layout: tablets in portrait & phones.
+// players, board & deck fill exactly the visible height (the board takes
+// what is left), so the hand is never cut; the log follows below the fold
 @media (max-width: 900px) {
   .sessionEntriesBlock {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(340px, 58vh) auto auto 200px;
-    grid-template-areas: "players" "board" "deck" "logTitle" "log";
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     min-height: 0;
+
+    > * {
+      flex-shrink: 0;
+    }
+  }
+
+  .playArea {
+    display: grid;
+    flex: 0 0 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(150px, 1fr) auto;
+    grid-template-areas: "players" "board" "deck";
+    gap: inherit;
+    min-height: 380px;
+  }
+
+  // the log overflows the block: keep the bottom spacing
+  .sessionEntriesBlock > :last-child {
+    height: 200px;
+    margin-bottom: 8px;
   }
 }
 
 @media (max-width: 520px) {
   .sessionEntriesBlock {
-    grid-template-rows: auto minmax(300px, 52vh) auto auto 180px;
     gap: 6px;
     padding: 6px;
+
+    > :last-child {
+      height: 180px;
+      margin-bottom: 6px;
+    }
   }
 }
 
@@ -68,5 +98,15 @@
     padding: 6px;
     min-height: 300px;
     height: 100%;
+    display: grid;
+
+    > :last-child {
+      height: auto;
+      margin-bottom: 0;
+    }
+  }
+
+  .playArea {
+    display: contents;
   }
 }

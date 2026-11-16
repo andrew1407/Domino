@@ -14,14 +14,16 @@ export default function PlayerInfo({ name, score, tiles, you, bot, active }) {
         {you && <small className={styles.youTag}>(you)</small>}
         {bot && <small className={styles.botTag}>bot</small>}
       </div>
-      <div className={styles.infoEntries}>
-        <span>{score}</span>
-        <img className={styles.scoreImg} src={assetPath('/static/score.png')} alt="score" />
-      </div>
-      <span className={styles.separator}>|</span>
-      <div className={styles.infoEntries}>
-        <span>{tiles}</span>
-        <img className={styles.tilesImg} src={assetPath('/static/tile.png')} alt="tiles" />
+      <div className={styles.statsBlock}>
+        <div className={styles.infoEntries}>
+          <span>{score}</span>
+          <img className={styles.scoreImg} src={assetPath('/static/score.png')} alt="score" />
+        </div>
+        <span className={styles.separator}>|</span>
+        <div className={styles.infoEntries}>
+          <span>{tiles}</span>
+          <img className={styles.tilesImg} src={assetPath('/static/tile.png')} alt="tiles" />
+        </div>
       </div>
     </div>
   );

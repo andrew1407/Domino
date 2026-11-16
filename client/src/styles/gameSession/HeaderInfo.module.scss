@@ -102,3 +102,19 @@
     margin-left: 0;
   }
 }
+
+// phones: keep only final score, players, round and leave
+@media (max-width: 600px) {
+  .headerInfoContainer {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .infoEntry, .infoEntryBordered {
+    white-space: nowrap;
+  }
+
+  .sessionComponent {
+    display: none;
+  }
+}

@@ -13,7 +13,9 @@
   @include flex-display(row, center);
   min-width: 0;
   gap: 10px;
+  flex-wrap: wrap;
   align-items: center;
+  row-gap: 2px;
   padding: 8px 12px;
   font-size: 112%;
   transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
@@ -80,6 +82,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+// score and tiles stay together: when the name doesn't fit beside them,
+// they move under it instead of cutting the name
+.statsBlock {
+  @include flex-display(row, center);
+  align-items: center;
+  gap: inherit;
+  flex-shrink: 0;
 }
 
 .infoEntries, .separator {

@@ -50,3 +50,10 @@
     font-size: 130%;
   }
 }
+
+// game session on phones and tablets: the info bar needs the whole width
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
+  .withInfo .title {
+    display: none;
+  }
+}
