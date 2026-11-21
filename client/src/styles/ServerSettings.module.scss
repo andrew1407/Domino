@@ -30,6 +30,18 @@
   color: #5a3d12;
 }
 
+.section {
+  margin: 8px 0 0;
+  font-size: 105%;
+}
+
+.warning {
+  margin: 0;
+  font-size: 95%;
+  font-weight: 700;
+  color: $brown-dark-theme;
+}
+
 .checkRow {
   display: flex;
   align-items: flex-start;

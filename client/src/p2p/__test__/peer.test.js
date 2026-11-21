@@ -6,6 +6,7 @@ import {
 } from '../peer';
 import { encode, decode } from '../codec';
 import { LocalServer } from '../../engine/localServer';
+import { saveSettings } from '../../config/server';
 
 // --- an in-memory RTCPeerConnection: peers "connect" when the host applies the answer
 class FakeChannel extends EventTarget {
@@ -138,6 +139,62 @@ describe('peer-to-peer connections', () => {
     const invite = await createInvite('local-2');
     expect((await decode(invite.code)).t).toBe(false);
     expect(offers.get((await decode(invite.code)).sdp).config.iceServers).toEqual([]);
+  });
+
+  it('passes the TURN server of the host to the guest', async () => {
+    saveSettings({ turnUrl: 'turn.example.com:3478, turns:turn.example.com:5349', turnUser: 'u', turnPass: 'p' });
+    try {
+      const invite = await createInvite('local-7');
+      const turn = { urls: ['turn:turn.example.com:3478', 'turns:turn.example.com:5349'], username: 'u', credential: 'p' };
+      const data = await decode(invite.code);
+      expect(data.r).toEqual(turn);
+      expect(offers.get(data.sdp).config.iceServers).toEqual([turn]);
+      const guest = await answerInvite(invite.code);
+      expect(answers.get((await decode(guest.code)).sdp).config.iceServers).toEqual([turn]);
+      await Promise.all([invite.accept(guest.code), guest.channel]);
+    } finally {
+      saveSettings({ turnUrl: '', turnUser: '', turnPass: '' });
+    }
+  });
+
+  it('passes own STUN servers of the host to the guest', async () => {
+    saveSettings({ stunUrl: 'stun.example.com:3478' });
+    try {
+      const invite = await createInvite('local-9');
+      const stun = [{ urls: ['stun:stun.example.com:3478'] }];
+      const data = await decode(invite.code);
+      expect(offers.get(data.sdp).config.iceServers).toEqual(stun);
+      const guest = await answerInvite(invite.code);
+      expect(answers.get((await decode(guest.code)).sdp).config.iceServers).toEqual(stun);
+      // a foreign scheme is ignored
+      const bad = await answerInvite(await encode({ ...data, u: ['turn:x.example.com'] }));
+      expect(answers.get((await decode(bad.code)).sdp).config.iceServers).toEqual([]);
+    } finally {
+      saveSettings({ stunUrl: '' });
+    }
+  });
+
+  it('explains a malformed server address instead of the browser error', async () => {
+    const Fake = globalThis.RTCPeerConnection;
+    globalThis.RTCPeerConnection = function () {
+      throw Object.assign(new Error('ICE server parsing failed: Invalid port'), { name: 'SyntaxError' });
+    };
+    try {
+      await expect(createInvite('local-10')).rejects.toThrow('server address in the settings is wrong');
+      await expect(answerInvite(await encode({ v: 1, s: 'local-10', n: 'x', sdp: 'offer' })))
+        .rejects.toThrow('wrong STUN or TURN server');
+    } finally {
+      globalThis.RTCPeerConnection = Fake;
+    }
+  });
+
+  it('ignores a malformed TURN server in an invite', async () => {
+    const invite = await createInvite('local-8');
+    const data = await decode(invite.code);
+    for (const r of [{ urls: ['http://evil.example.com'] }, { urls: ['turn:t.example.com'] }, { urls: ['turn:t.example.com:abc'], username: 'u', credential: 'p' }]) {
+      const guest = await answerInvite(await encode({ ...data, r }));
+      expect(answers.get((await decode(guest.code)).sdp).config.iceServers).toEqual([]);
+    }
   });
 
   it('rejects a reply made for another invite of the same session', async () => {

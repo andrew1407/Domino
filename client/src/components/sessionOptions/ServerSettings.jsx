@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DEFAULT_SETTINGS, loadSettings, saveSettings, httpUrl } from '../../config/server';
+import { DEFAULT_SETTINGS, loadSettings, saveSettings, httpUrl, turnMissingLogin, badServerUrls } from '../../config/server';
 import { pingServer } from '../../api/http/commands';
 import styles from '../../styles/ServerSettings.module.scss';
 
@@ -41,8 +41,8 @@ export default function ServerSettings({ onChange }) {
 
   const reset = useCallback(() => {
     // only what this form edits: the chosen game mode stays
-    const { httpAddr, wsAddr, stun } = DEFAULT_SETTINGS;
-    const next = saveSettings({ httpAddr, wsAddr, stun });
+    const { httpAddr, wsAddr, stun, stunUrl, turnUrl, turnUser, turnPass } = DEFAULT_SETTINGS;
+    const next = saveSettings({ httpAddr, wsAddr, stun, stunUrl, turnUrl, turnUser, turnPass });
     setSettings(next);
     setSaved(true);
     onChange?.(next);
@@ -80,6 +80,23 @@ export default function ServerSettings({ onChange }) {
         Default is the local server API.
       </p>
 
+      <h4 className={styles.section}>Direct games (WebRTC)</h4>
+      <p className={styles.hint}>
+        Off by default: direct games work only on the same Wi-Fi or hotspot and nothing leaves it.
+      </p>
+
+      <div className={styles.row}>
+        <label htmlFor="p2p-stun-url">STUN server:</label>
+        <input
+          id="p2p-stun-url"
+          type="text"
+          spellCheck="false"
+          placeholder="stun:stun.example.com:3478"
+          value={settings.stunUrl ?? ''}
+          onChange={e => update('stunUrl', e.target.value)}
+        />
+      </div>
+
       <label className={styles.checkRow} htmlFor="p2p-stun">
         <input
           id="p2p-stun"
@@ -87,11 +104,66 @@ export default function ServerSettings({ onChange }) {
           checked={!!settings.stun}
           onChange={e => update('stun', e.target.checked)}
         />
-        <span>
-          Direct games across different networks: use public STUN servers (Google, Cloudflare)
-          to find a route. Off: direct games work only on the same Wi-Fi or hotspot and nothing leaves it.
-        </span>
+        <span>use public STUN servers (Google, Cloudflare)</span>
       </label>
+
+      <p className={styles.hint}>
+        STUN finds each player's public address so that direct games connect across different networks.
+        Your own server, the public ones or both; <code>host:port</code> or <code>stun:…</code>, several separated by commas.
+      </p>
+
+      <div className={styles.row}>
+        <label htmlFor="p2p-turn">TURN server:</label>
+        <input
+          id="p2p-turn"
+          type="text"
+          spellCheck="false"
+          placeholder="turn:turn.example.com:3478"
+          value={settings.turnUrl ?? ''}
+          onChange={e => update('turnUrl', e.target.value)}
+        />
+      </div>
+
+      <div className={styles.row}>
+        <label htmlFor="p2p-turn-user">TURN username:</label>
+        <input
+          id="p2p-turn-user"
+          type="text"
+          spellCheck="false"
+          autoComplete="off"
+          value={settings.turnUser ?? ''}
+          onChange={e => update('turnUser', e.target.value)}
+        />
+      </div>
+
+      <div className={styles.row}>
+        <label htmlFor="p2p-turn-pass">TURN password:</label>
+        <input
+          id="p2p-turn-pass"
+          type="password"
+          autoComplete="off"
+          value={settings.turnPass ?? ''}
+          onChange={e => update('turnPass', e.target.value)}
+        />
+      </div>
+
+      {badServerUrls(settings).length > 0 && (
+        <p className={styles.warning} role="alert">
+          Not a valid server address: {badServerUrls(settings).join(', ')}. Use <code>host</code> or <code>host:port</code>.
+        </p>
+      )}
+
+      {turnMissingLogin(settings) && (
+        <p className={styles.warning} role="alert">
+          A TURN server needs both a username and a password: without them it isn't used.
+        </p>
+      )}
+
+      <p className={styles.hint}>
+        TURN is a relay for direct games when STUN can't connect the players (mobile CGNAT, corporate networks).
+        Use <code>host:port</code>, <code>turn:…</code> or <code>turns:…</code>; several URLs separated by commas.
+        The password is kept in this tab only and has to be entered again in a new tab. The host's TURN login is sent inside the invite: prefer temporary logins of your TURN provider.
+      </p>
 
       <div className={styles.actions}>
         <input className={styles.btn} type="submit" value="save" />

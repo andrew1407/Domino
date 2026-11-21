@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { httpUrl, wsUrl, isLocalAddress, saveSettings, loadSettings, setSessionServer, withScheme } from '../server';
+import { httpUrl, wsUrl, isLocalAddress, saveSettings, loadSettings, setSessionServer, withScheme, turnServer, stunUrls, badServerUrls } from '../server';
 import { makeShareLink } from '../../components/gameSession/headerInfo/SessionContainer';
 
 // the page this code runs on
@@ -57,4 +57,41 @@ describe('server addresses', () => {
     expect(params.get('http')).toBe('http://192.168.0.5:8080');
     expect(params.get('ws')).toBe('ws://192.168.0.5:8081');
   });
+});
+
+describe('TURN server', () => {
+  it('is unset by default', () => {
+    expect(turnServer({ turnUrl: '' })).toBeNull();
+    expect(turnServer({ turnUrl: '  ' })).toBeNull();
+  });
+
+  it('adds the turn: scheme and keeps the credentials', () => {
+    expect(turnServer({ turnUrl: 'a.example.com:3478, turns:a.example.com:5349', turnUser: 'u', turnPass: 'p' })).toEqual({
+      urls: ['turn:a.example.com:3478', 'turns:a.example.com:5349'], username: 'u', credential: 'p',
+    });
+    expect(turnServer({ turnUrl: 'TURN:a.example.com', turnUser: 'u', turnPass: 'p' }))
+      .toEqual({ urls: ['TURN:a.example.com'], username: 'u', credential: 'p' });
+  });
+
+  it('is not used without the login: browsers reject it', () => {
+    expect(turnServer({ turnUrl: 'a.example.com:3478' })).toBeNull();
+    expect(turnServer({ turnUrl: 'a.example.com:3478', turnUser: 'u' })).toBeNull();
+    expect(turnServer({ turnUrl: 'a.example.com:3478', turnPass: 'p' })).toBeNull();
+  });
+});
+
+it('reads own STUN servers', () => {
+  expect(stunUrls('')).toEqual([]);
+  expect(stunUrls('a.example.com:3478, stun:b.example.com')).toEqual(['stun:a.example.com:3478', 'stun:b.example.com']);
+});
+
+it('cleans up pasted web addresses', () => {
+  expect(stunUrls('https://stun.example.com/')).toEqual(['stun:stun.example.com']);
+  expect(stunUrls('stun.example.com:3478/')).toEqual(['stun:stun.example.com:3478']);
+});
+
+it('finds the addresses a browser would reject', () => {
+  expect(badServerUrls({ stunUrl: 'stun.example.com:3478, [::1]:3478', turnUrl: 'turn:t.example.com:3478?transport=tcp' })).toEqual([]);
+  expect(badServerUrls({ stunUrl: 'stun.example.com:abc', turnUrl: 't.example.com/path' }))
+    .toEqual(['stun:stun.example.com:abc', 'turn:t.example.com/path']);
 });
